@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Search, MapPin, RefreshCw, Droplet, Fuel, 
   X, Clock, CheckCircle2, XCircle,
   LogOut, LogIn, Edit, Settings, Save, Lock, Heart,
   Menu, Users, Star
 } from 'lucide-react';
-import { signInWithPopup, signOut } from "firebase/auth";
+import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
 
 const FUEL_NAMES = { diesel: "ดีเซล", g95: "G95", g91: "G91", e20: "E20" };
+const SESSION_DURATION = 10 * 60 * 1000; // 10 minutes
 
 export default function App() {
   const [activeView, setActiveView] = useState('dashboard');
@@ -32,6 +33,56 @@ export default function App() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const logoutTimerRef = useRef(null);
+
+  const doLogout = () => {
+    signOut(auth).then(() => {
+      setUser(null);
+      localStorage.removeItem('fuel_login_time');
+    });
+  };
+
+  const startLogoutTimer = (loginTime) => {
+    if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+    const elapsed = Date.now() - loginTime;
+    const remaining = SESSION_DURATION - elapsed;
+    if (remaining <= 0) {
+      doLogout();
+    } else {
+      logoutTimerRef.current = setTimeout(() => doLogout(), remaining);
+    }
+  };
+
+  // Listen to Firebase auth state – persists across refreshes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        let loginTime = parseInt(localStorage.getItem('fuel_login_time'));
+        if (!loginTime) {
+          loginTime = Date.now();
+          localStorage.setItem('fuel_login_time', loginTime.toString());
+        }
+        // Check if session expired
+        if (Date.now() - loginTime > SESSION_DURATION) {
+          doLogout();
+          return;
+        }
+        setUser({
+          name: firebaseUser.displayName,
+          email: firebaseUser.email,
+          avatar: firebaseUser.displayName?.charAt(0).toUpperCase() || "U"
+        });
+        startLogoutTimer(loginTime);
+      } else {
+        setUser(null);
+        localStorage.removeItem('fuel_login_time');
+      }
+    });
+    return () => {
+      unsubscribe();
+      if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+    };
+  }, []);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -54,7 +105,10 @@ export default function App() {
     setIsLoggingIn(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
+      const loginTime = Date.now();
+      localStorage.setItem('fuel_login_time', loginTime.toString());
       setUser({ name: result.user.displayName, email: result.user.email, avatar: result.user.displayName?.charAt(0).toUpperCase() || "U" });
+      startLogoutTimer(loginTime);
       setShowLoginModal(false);
     } catch (e) { console.error(e); }
     setIsLoggingIn(false);
@@ -197,7 +251,7 @@ export default function App() {
                 <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
               </div>
             </div>
-            <button onClick={() => signOut(auth).then(() => setUser(null))} className="w-full py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-lg transition-colors flex items-center justify-center gap-1.5">
+            <button onClick={doLogout} className="w-full py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-lg transition-colors flex items-center justify-center gap-1.5">
               <LogOut size={13} /> ออกจากระบบ
             </button>
           </div>
