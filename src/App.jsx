@@ -41,7 +41,7 @@ export default function App() {
   const [newsFormModal, setNewsFormModal] = useState({ isOpen: false, item: null, imageUrls: [''], videoUrls: [''], type: 'admin' });
   const [siteConfig, setSiteConfig] = useState(() => {
     const cached = localStorage.getItem('fuel_radar_config');
-    return cached ? JSON.parse(cached) : { announcement_enabled: 'true', announcement_title: 'กำลังโหลด...', announcement_content: 'เพื่อนช่วยเพื่อน คนตรังช่วยคนตรัง 💜' };
+    return cached ? JSON.parse(cached) : { announcement_enabled: 'true', announcement_title: 'กำลังโหลด...', announcement_content: 'เพื่อนช่วยเพื่อน คนตรังช่วยคนตรัง 💜', announcement_link: '' };
   });
   const [showAnnouncement, setShowAnnouncement] = useState(() => {
     const cached = localStorage.getItem('fuel_radar_config');
@@ -906,6 +906,15 @@ export default function App() {
                         placeholder="รายละเอียดข้อความ... (รองรับการขึ้นบรรทัดใหม่)"
                       />
                     </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">URL ลิงก์คู่มือ (ถ้ามี)</label>
+                      <input 
+                        value={siteConfig.announcement_link || ''} 
+                        onChange={e => setSiteConfig(prev => ({ ...prev, announcement_link: e.target.value }))}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm" 
+                        placeholder="https://..."
+                      />
+                    </div>
                   </div>
                   <div className="flex justify-end pt-2">
                     <button onClick={handleSaveConfig} className="bg-slate-800 text-white px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest border border-slate-700 hover:bg-slate-900 transition-all flex items-center gap-2">
@@ -1369,6 +1378,18 @@ export default function App() {
               <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap mb-8 text-center bg-slate-50/50 p-6 rounded-3xl border border-slate-100/50">
                 {siteConfig.announcement_content}
               </div>
+
+              {siteConfig.announcement_link && (
+                <a 
+                  href={siteConfig.announcement_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-4 mb-3 bg-purple-50 text-purple-700 rounded-[20px] font-black text-sm border-2 border-purple-100 hover:bg-purple-100 transition-all flex items-center justify-center gap-3"
+                >
+                  <ExternalLink size={18} /> ดูคู่มือการใช้งานอย่างละเอียด
+                </a>
+              )}
+
               <button 
                 onClick={() => setShowAnnouncement(false)} 
                 className="w-full py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-[20px] font-black text-sm shadow-xl shadow-slate-200 hover:shadow-slate-300 hover:translate-y-[-1px] active:translate-y-0 transition-all flex items-center justify-center gap-3"

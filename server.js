@@ -77,7 +77,8 @@ async function initDoc() {
     const defaultConfigs = [
       { key: 'announcement_enabled', value: 'true' },
       { key: 'announcement_title', value: 'ยินดีต้อนรับสู่ FuelRadar Trang' },
-      { key: 'announcement_content', value: 'เพื่อนช่วยเพื่อน คนตรังช่วยคนตรัง 💜\n\n- เช็กราคาน้ำมันเรียลไทม์\n- ร่วมรายงานสถานะปั๊มน้ำมัน\n- ติดตามข่าวสารจากชุมชน' }
+      { key: 'announcement_content', value: 'เพื่อนช่วยเพื่อน คนตรังช่วยคนตรัง 💜\n\n- เช็กราคาน้ำมันเรียลไทม์\n- ร่วมรายงานสถานะปั๊มน้ำมัน\n- ติดตามข่าวสารจากชุมชน' },
+      { key: 'announcement_link', value: '' }
     ];
 
     const toAdd = defaultConfigs.filter(c => !existingKeys.includes(c.key));
