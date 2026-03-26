@@ -15,6 +15,7 @@ const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
 const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : null;
 
 // Initialize Auth
+console.log('Initializing JWT with email:', GOOGLE_CLIENT_EMAIL);
 const serviceAccountAuth = new JWT({
   email: GOOGLE_CLIENT_EMAIL,
   key: GOOGLE_PRIVATE_KEY,
@@ -24,7 +25,14 @@ const serviceAccountAuth = new JWT({
 const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
 
 async function initDoc() {
-  await doc.loadInfo();
+  try {
+    console.log('Loading doc info for ID:', SPREADSHEET_ID);
+    await doc.loadInfo();
+    console.log('Doc loaded successfully:', doc.title);
+  } catch (err) {
+    console.error('Failed to load doc info:', err.message);
+    throw err;
+  }
 }
 
 // GET /api/stations
