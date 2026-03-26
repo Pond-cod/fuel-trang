@@ -453,24 +453,12 @@ export default function App() {
         <NavBtn icon={<Fuel size={17} />} label="ภาพรวมน้ำมัน" view="dashboard" />
         <NavBtn icon={<Megaphone size={17} />} label="ประชาสัมพันธ์" view="news" />
         <NavBtn icon={<Users size={17} />} label="นักรายงานข่าว" view="leaderboard" />
-        {siteConfig.announcement_link ? (
-          <a 
-            href={siteConfig.announcement_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setSidebarOpen(false)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-purple-50 hover:text-purple-700 transition-all"
-          >
-            <Info size={17} className="text-purple-400" /> คู่มือการทำงาน
-          </a>
-        ) : (
-          <button 
-            onClick={() => { setShowAnnouncement(true); setSidebarOpen(false); }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-purple-50 hover:text-purple-700 transition-all"
-          >
-            <Info size={17} className="text-purple-400" /> คู่มือการทำงาน
-          </button>
-        )}
+        <button 
+          onClick={() => navigate('manual')}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeView === 'manual' ? 'bg-purple-500 text-white shadow-md' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-700'}`}
+        >
+          <Info size={17} className={activeView === 'manual' ? 'text-white' : 'text-purple-400'} /> คู่มือการทำงาน
+        </button>
         {isAdminLoggedIn && <NavBtn icon={<Settings size={17} />} label="จัดการระบบ" view="admin" />}
       </nav>
 
@@ -873,6 +861,16 @@ export default function App() {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeView === 'manual' && (
+            <div className="h-full bg-slate-900 overflow-hidden flex flex-col">
+              <iframe 
+                src="/manual.html" 
+                className="w-full h-full border-none" 
+                title="คู่มือการใช้งาน"
+              />
             </div>
           )}
 
@@ -1397,16 +1395,12 @@ export default function App() {
                 {siteConfig.announcement_content}
               </div>
 
-              {siteConfig.announcement_link && (
-                <a 
-                  href={siteConfig.announcement_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-4 mb-3 bg-purple-50 text-purple-700 rounded-[20px] font-black text-sm border-2 border-purple-100 hover:bg-purple-100 transition-all flex items-center justify-center gap-3"
-                >
-                  <ExternalLink size={18} /> ดูคู่มือการใช้งานอย่างละเอียด
-                </a>
-              )}
+              <button 
+                onClick={() => { setShowAnnouncement(false); navigate('manual'); }}
+                className="w-full py-4 mb-3 bg-purple-50 text-purple-700 rounded-[20px] font-black text-sm border-2 border-purple-100 hover:bg-purple-100 transition-all flex items-center justify-center gap-3"
+              >
+                <Info size={18} /> ดูคู่มือการใช้งานอย่างละเอียด
+              </button>
 
               <button 
                 onClick={() => setShowAnnouncement(false)} 
