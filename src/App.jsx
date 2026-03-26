@@ -502,22 +502,21 @@ export default function App() {
             <div className="p-4 md:p-5 max-w-6xl mx-auto space-y-4">
 
               {/* Hero Banner */}
-              <div className="bg-gradient-to-r from-purple-500 to-purple-400 rounded-2xl p-5 text-white shadow-lg shadow-purple-300/30 overflow-hidden relative">
+              <div className="bg-gradient-to-r from-purple-500 to-purple-400 rounded-2xl p-6 text-white shadow-lg shadow-purple-300/30 overflow-hidden relative">
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex-1">
                     <p className="text-xs font-bold opacity-80 mb-1">🤝 คนตรังช่วยคนตรัง</p>
                     <h2 className="text-xl font-black leading-tight">รู้ก่อน ออกก่อน<br />ไม่ต้องเสียเวลาเข้าคิว!</h2>
                     <p className="text-xs opacity-80 mt-2">อัปเดตจากชาวตรังจริงๆ ทุกวัน</p>
+                    
+                    <div className="mt-4 flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-xl p-2 pr-4 w-fit border border-white/10 animate-pulse-slow">
+                      <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                        <Heart size={14} className="text-white fill-white" />
+                      </div>
+                      <p className="text-[10px] font-bold">ช่วยกันรายงานสถานะที่แต่ละปั๊ม เพื่อเพื่อนชาวตรังครับ 💜</p>
+                    </div>
                   </div>
                   
-                  {/* Visual Center Decoration */}
-                  <div className="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-40 mix-blend-overlay">
-                    <div className="w-64 h-64 bg-white/20 rounded-full blur-3xl" />
-                  </div>
-                  <div className="hidden md:block flex-shrink-0 mx-4 relative transform hover:scale-105 transition-transform duration-700">
-                    <img src="/trang_fuel_community_hero_graphic_1774505285536.png" alt="Community Fuel" className="w-24 h-24 object-contain drop-shadow-2xl" />
-                  </div>
-
                   <div className="text-right flex-shrink-0">
                     <p className="text-4xl font-black">{isLoading ? '...' : stats.total}</p>
                     <p className="text-xs opacity-80">ปั๊มในตรัง</p>
@@ -543,19 +542,6 @@ export default function App() {
                     <p className="text-[9px] text-slate-400">แห่งพร้อม</p>
                   </div>
                 ))}
-              </div>
-
-              {/* Community Encouragement Banner */}
-              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-4 animate-pulse-slow">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                  <Heart size={20} className="text-emerald-600 fill-emerald-500" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-black text-emerald-800">ร่วมรายงานสถานะน้ำมัน!</p>
-                  <p className="text-[10px] text-emerald-600 font-bold leading-relaxed">
-                    เพียงกดยืนยันสถานะที่แต่ละปั๊ม เพื่อช่วยให้เพื่อนชาวตรังประหยัดเวลาและน้ำมัน 💜
-                  </p>
-                </div>
               </div>
 
               {/* Search & Filter */}
