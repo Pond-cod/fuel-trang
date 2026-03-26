@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
+import { google } from 'googleapis';
 import dotenv from 'dotenv';
 
 dotenv.config();

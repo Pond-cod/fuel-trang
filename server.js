@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
+import { google } from 'googleapis';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
@@ -12,16 +13,11 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
 const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
-
 // Simple logger
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   next();
 });
-const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY 
-  ? process.env.GOOGLE_PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n') 
-  : null;
 
 // Initialize Auth
 const serviceAccountAuth = new JWT({
@@ -31,11 +27,43 @@ const serviceAccountAuth = new JWT({
 });
 
 const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+const gsheets = google.sheets({ version: 'v4', auth: serviceAccountAuth });
 
 async function initDoc() {
-  await doc.loadInfo();
-}
+  try {
+    await doc.loadInfo();
+    console.log('Doc loaded successfully:', doc.title);
 
+    // Check and create sheets if they don't exist
+    const sheetsMetadata = await gsheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+    const existingSheetTitles = sheetsMetadata.data.sheets.map(s => s.properties.title);
+
+    const sheetsToCreate = [
+      { title: NEWS_SHEET, headerValues: ['id', 'title', 'content', 'image_url', 'video_url', 'reference_url', 'created_at', 'updated_at'] },
+      { title: USER_NEWS_SHEET, headerValues: ['id', 'user_name', 'user_email', 'title', 'content', 'image_url', 'video_url', 'created_at'] },
+      { title: COMMENTS_SHEET, headerValues: ['id', 'news_id', 'user_name', 'user_email', 'avatar', 'content', 'created_at'] }
+    ];
+
+    for (const sheetInfo of sheetsToCreate) {
+      if (!existingSheetTitles.includes(sheetInfo.title)) {
+        console.log(`Creating sheet: ${sheetInfo.title}`);
+        await gsheets.spreadsheets.batchUpdate({
+          spreadsheetId: SPREADSHEET_ID,
+          resource: { requests: [{ addSheet: { properties: { title: sheetInfo.title } } }] }
+        });
+        await gsheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${sheetInfo.title}!A1:${String.fromCharCode(64 + sheetInfo.headerValues.length)}1`,
+          valueInputOption: 'RAW',
+          resource: { values: [sheetInfo.headerValues] }
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load doc info or create sheets:', err.message);
+    throw err;
+  }
+}
 // GET /api/stations
 app.get('/api/stations', async (req, res) => {
   try {
@@ -231,15 +259,100 @@ app.post('/api/news/update', async (req, res) => {
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed' }); }
 });
 
-app.post('/api/news/delete', async (req, res) => {
-  const { id } = req.body;
+app.delete('/api/news/:id', async (req, res) => {
   try {
-    const sheet = await getOrCreateNewsSheet();
-    const rows = await sheet.getRows();
-    const row = rows.find(r => r.get('id') == id);
-    if (row) { await row.delete(); res.json({ status: 'success' }); }
-    else { res.status(404).json({ error: 'Not found' }); }
+    await initDoc();
+    const { id } = req.params;
+    let response = await gsheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${NEWS_SHEET}!A:A` });
+    let rows = response.data.values || [];
+    let rowIndex = rows.findIndex(r => r[0] === id);
+    let targetSheet = NEWS_SHEET;
+
+    if (rowIndex === -1) {
+      response = await gsheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${USER_NEWS_SHEET}!A:A` });
+      rows = response.data.values || [];
+      rowIndex = rows.findIndex(r => r[0] === id);
+      targetSheet = USER_NEWS_SHEET;
+    }
+
+    if (rowIndex === -1) return res.status(404).json({ error: 'News not found' });
+
+    const sheetsMetadata = await gsheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+    const targetSheetMeta = sheetsMetadata.data.sheets.find(s => s.properties.title === targetSheet);
+    const sheetId = targetSheetMeta.properties.sheetId;
+
+    await gsheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      resource: { requests: [{ deleteDimension: { range: { sheetId: sheetId, dimension: 'ROWS', startIndex: rowIndex, endIndex: rowIndex + 1 } } }] }
+    });
+    res.json({ status: 'success' });
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed' }); }
+});
+
+// COMMUNITY NEWS & COMMENTS
+app.get('/api/user-news', async (req, res) => {
+  try {
+    await initDoc();
+    const response = await gsheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${USER_NEWS_SHEET}!A:H` });
+    const rows = response.data.values || [];
+    if (rows.length === 0) return res.json([]);
+    const header = rows[0];
+    const data = rows.slice(1).map(row => {
+      let obj = {};
+      header.forEach((key, i) => obj[key] = row[i] || '');
+      return obj;
+    }).reverse();
+    res.json(data);
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/api/user-news', async (req, res) => {
+  try {
+    await initDoc();
+    const { user_name, user_email, title, content, image_url, video_url } = req.body;
+    const id = Date.now().toString();
+    const created_at = new Date().toLocaleString('th-TH');
+    await gsheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${USER_NEWS_SHEET}!A:H`,
+      valueInputOption: 'RAW',
+      resource: { values: [[id, user_name||'Anon', user_email||'', title||'', content||'', image_url||'', video_url||'', created_at]] }
+    });
+    res.json({ id, status: 'success' });
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.get('/api/comments/:news_id', async (req, res) => {
+  try {
+    await initDoc();
+    const { news_id } = req.params;
+    const response = await gsheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${COMMENTS_SHEET}!A:G` });
+    const rows = response.data.values || [];
+    if (rows.length === 0) return res.json([]);
+    const header = rows[0];
+    const data = rows.slice(1).map(row => {
+      let obj = {};
+      header.forEach((key, i) => obj[key] = row[i] || '');
+      return obj;
+    }).filter(c => c.news_id === news_id).reverse();
+    res.json(data);
+  } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/api/comments', async (req, res) => {
+  try {
+    await initDoc();
+    const { news_id, user_name, user_email, avatar, content } = req.body;
+    const id = Date.now().toString();
+    const created_at = new Date().toLocaleString('th-TH');
+    await gsheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${COMMENTS_SHEET}!A:G`,
+      valueInputOption: 'RAW',
+      resource: { values: [[id, news_id||'', user_name||'Anon', user_email||'', avatar||'', content||'', created_at]] }
+    });
+    res.json({ id, status: 'success' });
+  } catch (e) { res.status(500).send(e.message); }
 });
 
 app.listen(PORT, () => {
