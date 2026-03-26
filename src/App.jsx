@@ -3,7 +3,7 @@ import {
   Search, MapPin, RefreshCw, Droplet, Fuel, 
   X, Clock, CheckCircle2, XCircle,
   LogOut, LogIn, Edit, Settings, Save, Lock, Heart,
-  Menu, Users, Star, Megaphone, Trash2, Plus, ExternalLink, Image, Video, MessageSquare, User
+  Menu, Users, Star, Megaphone, Trash2, Plus, ExternalLink, Image, Video, MessageSquare, User, Info
 } from 'lucide-react';
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
@@ -39,6 +39,8 @@ export default function App() {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsDetailModal, setNewsDetailModal] = useState({ isOpen: false, item: null });
   const [newsFormModal, setNewsFormModal] = useState({ isOpen: false, item: null, imageUrls: [''], videoUrls: [''], type: 'admin' });
+  const [siteConfig, setSiteConfig] = useState({ announcement_enabled: 'false', announcement_title: '', announcement_content: '' });
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
   const logoutTimerRef = useRef(null);
 
   const doLogout = () => {
@@ -97,12 +99,21 @@ export default function App() {
       if (response.ok) setData(await response.json());
     } catch (e) { console.error(e); }
     setIsLoading(false);
+  };  const fetchConfig = async () => {
+    try {
+      const response = await fetch('/api/config');
+      if (response.ok) {
+        const config = await response.json();
+        setSiteConfig(prev => ({ ...prev, ...config }));
+        if (config.announcement_enabled === 'true') setShowAnnouncement(true);
+      }
+    } catch (e) { console.error('Config error:', e); }
   };
-
   useEffect(() => {
     fetchData();
     fetchNews();
     fetchUserNews();
+    fetchConfig();
     if (window.location.pathname === '/admin') {
       setShowAdminLoginModal(true);
       window.history.replaceState({}, '', '/');
@@ -129,6 +140,17 @@ export default function App() {
       if (res.ok) { setIsAdminLoggedIn(true); setShowAdminLoginModal(false); setActiveView('admin'); setAdminLoginError(''); setAdminLoginForm({ username: '', password: '' }); }
       else setAdminLoginError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
     } catch (e) { setAdminLoginError('เกิดข้อผิดพลาด'); }
+  };
+
+  const handleSaveConfig = async () => {
+    try {
+      const res = await fetch('/api/config', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ config: siteConfig }) 
+      });
+      if (res.ok) alert('บันทึกการตั้งค่าเรียบร้อยแล้ว');
+    } catch (e) { alert('เกิดข้อผิดพลาดในการบันทึก'); }
   };
 
   const handleVoteClick = (stationId, fuelKey, stationName, fuelName) => {
@@ -417,6 +439,12 @@ export default function App() {
         <NavBtn icon={<Fuel size={17} />} label="ภาพรวมน้ำมัน" view="dashboard" />
         <NavBtn icon={<Megaphone size={17} />} label="ประชาสัมพันธ์" view="news" />
         <NavBtn icon={<Users size={17} />} label="นักรายงานข่าว" view="leaderboard" />
+        <button 
+          onClick={() => { setShowAnnouncement(true); setSidebarOpen(false); }}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-purple-50 hover:text-purple-700 transition-all"
+        >
+          <Info size={17} className="text-purple-400" /> คู่มือการทำงาน
+        </button>
         {isAdminLoggedIn && <NavBtn icon={<Settings size={17} />} label="จัดการระบบ" view="admin" />}
       </nav>
 
@@ -817,13 +845,59 @@ export default function App() {
           )}
 
           {activeView === 'admin' && isAdminLoggedIn && (
-            <div className="p-4 md:p-5 max-w-4xl mx-auto space-y-5">
+            <div className="p-4 md:p-5 max-w-4xl mx-auto space-y-5 pb-20">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-black text-slate-700">จัดการระบบ</h2>
+                <h2 className="text-xl font-black text-slate-800 italic border-l-4 border-slate-800 pl-4 py-1 leading-none uppercase tracking-tight">Backend Control Center</h2>
                 <div className="flex gap-2">
-                  <button onClick={() => openNewsForm()} className="bg-purple-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md hover:bg-purple-700 transition-all flex items-center gap-1.5">
+                  <button onClick={() => openNewsForm()} className="bg-purple-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md hover:bg-purple-700 transition-all flex items-center gap-1.5 active:scale-95">
                     <Megaphone size={14} /> เพิ่มข่าวประชาสัมพันธ์
                   </button>
+                </div>
+              </div>
+
+              {/* Announcement Settings */}
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                  <h3 className="font-bold flex items-center gap-2 text-slate-700">
+                    <Megaphone size={16} className="text-purple-500" /> ตั้งค่าประกาศหน้าแรก (Pop-up)
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{siteConfig.announcement_enabled === 'true' ? 'เปิดใช้งาน' : 'ปิดอยู่'}</span>
+                    <button 
+                      onClick={() => setSiteConfig(prev => ({ ...prev, announcement_enabled: prev.announcement_enabled === 'true' ? 'false' : 'true' }))} 
+                      className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${siteConfig.announcement_enabled === 'true' ? 'bg-purple-500' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300 ${siteConfig.announcement_enabled === 'true' ? 'right-1' : 'left-1'}`} />
+                    </button>
+                  </div>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">หัวข้อประกาศ</label>
+                      <input 
+                        value={siteConfig.announcement_title} 
+                        onChange={e => setSiteConfig(prev => ({ ...prev, announcement_title: e.target.value }))}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm font-bold" 
+                        placeholder="หัวข้อที่จะแสดงบน Pop-up..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">เนื้อหาประกาศ</label>
+                      <textarea 
+                        value={siteConfig.announcement_content} 
+                        onChange={e => setSiteConfig(prev => ({ ...prev, announcement_content: e.target.value }))}
+                        rows={3}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm leading-relaxed" 
+                        placeholder="รายละเอียดข้อความ... (รองรับการขึ้นบรรทัดใหม่)"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <button onClick={handleSaveConfig} className="bg-slate-800 text-white px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest border border-slate-700 hover:bg-slate-900 transition-all flex items-center gap-2">
+                      <Save size={14} /> บันทึกการตั้งค่าประกาศ
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1222,8 +1296,8 @@ export default function App() {
 
       {/* EDIT MODAL */}
       {editModal.isOpen && editModal.station && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 animate-scale-in">
             <div className="flex justify-between items-center mb-5">
               <h2 className="font-black text-slate-800">แก้ไขสถานีบริการ</h2>
               <button onClick={() => setEditModal({ isOpen: false, station: null })} className="p-1.5 bg-slate-100 rounded-lg"><X size={16} /></button>
@@ -1254,6 +1328,41 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ANNOUNCEMENT MODAL */}
+      {showAnnouncement && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-scale-in">
+            <div className="bg-gradient-to-br from-purple-600 to-purple-500 p-8 text-white text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-6">
+                <button onClick={() => setShowAnnouncement(false)} className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-sm"><X size={20} /></button>
+              </div>
+              
+              {/* Decorative light effect */}
+              <div className="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/30 shadow-xl backdrop-blur-md">
+                <Megaphone size={32} className="text-white" />
+              </div>
+              <h2 className="text-2xl font-black leading-tight">{siteConfig.announcement_title}</h2>
+              <div className="w-12 h-1 bg-white/30 rounded-full mx-auto mt-4"></div>
+            </div>
+            
+            <div className="p-8 md:p-10">
+              <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap mb-8 text-center bg-slate-50/50 p-6 rounded-3xl border border-slate-100/50">
+                {siteConfig.announcement_content}
+              </div>
+              <button 
+                onClick={() => setShowAnnouncement(false)} 
+                className="w-full py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-[20px] font-black text-sm shadow-xl shadow-slate-200 hover:shadow-slate-300 hover:translate-y-[-1px] active:translate-y-0 transition-all flex items-center justify-center gap-3"
+              >
+                เข้าใจแล้ว เริ่มใช้งานเลย! 🚀
+              </button>
+              <p className="text-center text-[10px] font-bold text-slate-300 mt-6 uppercase tracking-widest">Powered by FuelRadar Community</p>
+            </div>
           </div>
         </div>
       )}

@@ -22,6 +22,7 @@ const VOTE_LOG_SHEET = 'votes_log';
 const NEWS_SHEET = 'news';
 const USER_NEWS_SHEET = 'user_news';
 const COMMENTS_SHEET = 'comments';
+const CONFIG_SHEET = 'config';
 // Simple logger
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -50,7 +51,8 @@ async function initDoc() {
     const sheetsToCreate = [
       { title: NEWS_SHEET, headerValues: ['id', 'title', 'content', 'image_url', 'video_url', 'reference_url', 'created_at', 'updated_at'] },
       { title: USER_NEWS_SHEET, headerValues: ['id', 'user_name', 'user_email', 'title', 'content', 'image_url', 'video_url', 'created_at'] },
-      { title: COMMENTS_SHEET, headerValues: ['id', 'news_id', 'user_name', 'user_email', 'avatar', 'content', 'created_at'] }
+      { title: COMMENTS_SHEET, headerValues: ['id', 'news_id', 'user_name', 'user_email', 'avatar', 'content', 'created_at'] },
+      { title: CONFIG_SHEET, headerValues: ['key', 'value'] }
     ];
 
     for (const sheetInfo of sheetsToCreate) {
@@ -67,6 +69,26 @@ async function initDoc() {
           resource: { values: [sheetInfo.headerValues] }
         });
       }
+    }
+
+    // Refresh doc info to include new sheets
+    await doc.loadInfo();
+
+    // Seed default config keys if missing
+    const configSheet = doc.sheetsByTitle[CONFIG_SHEET];
+    const configRows = await configSheet.getRows();
+    const existingKeys = configRows.map(r => r.get('key'));
+    
+    const defaultConfigs = [
+      { key: 'announcement_enabled', value: 'true' },
+      { key: 'announcement_title', value: 'ยินดีต้อนรับสู่ FuelRadar Trang' },
+      { key: 'announcement_content', value: 'เพื่อนช่วยเพื่อน คนตรังช่วยคนตรัง 💜\n\n- เช็กราคาน้ำมันเรียลไทม์\n- ร่วมรายงานสถานะปั๊มน้ำมัน\n- ติดตามข่าวสารจากชุมชน' }
+    ];
+
+    const toAdd = defaultConfigs.filter(c => !existingKeys.includes(c.key));
+    if (toAdd.length > 0) {
+      console.log(`Adding ${toAdd.length} missing config keys...`);
+      await configSheet.addRows(toAdd);
     }
   } catch (err) {
     console.error('Failed to load doc info or create sheets:', err.message);
@@ -362,6 +384,34 @@ app.post('/api/comments', async (req, res) => {
     });
     res.json({ id, status: 'success' });
   } catch (e) { res.status(500).send(e.message); }
+});
+
+// GET /api/config
+app.get('/api/config', async (req, res) => {
+  try {
+    await initDoc();
+    const sheet = doc.sheetsByTitle[CONFIG_SHEET];
+    const rows = await sheet.getRows();
+    const config = {};
+    rows.forEach(row => { config[row.get('key')] = row.get('value'); });
+    res.json(config);
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch config' }); }
+});
+
+// POST /api/config
+app.post('/api/config', async (req, res) => {
+  const { config } = req.body;
+  try {
+    await initDoc();
+    const sheet = doc.sheetsByTitle[CONFIG_SHEET];
+    const rows = await sheet.getRows();
+    for (const [key, value] of Object.entries(config)) {
+      const row = rows.find(r => r.get('key') === key);
+      if (row) { row.set('value', value.toString()); await row.save(); }
+      else { await sheet.addRow({ key, value: value.toString() }); }
+    }
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: 'Failed to update config' }); }
 });
 
 app.listen(PORT, () => {
