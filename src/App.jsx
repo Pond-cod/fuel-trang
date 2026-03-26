@@ -37,9 +37,8 @@ export default function App() {
 
   const fetchData = async () => {
     setIsLoading(true);
-    console.log("Fetching stations from http://127.0.0.1:3001/api/stations...");
     try {
-      const response = await fetch('http://127.0.0.1:3001/api/stations');
+      const response = await fetch('/api/stations');
       console.log("Response status:", response.status);
       if (response.ok) {
         const result = await response.json();
@@ -82,7 +81,7 @@ export default function App() {
   const handleAdminLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://127.0.0.1:3001/api/admin/login', {
+      const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(adminLoginForm)
@@ -144,7 +143,7 @@ export default function App() {
     setVoteModal({ isOpen: false, stationId: null, fuelKey: null, stationName: "", fuelName: "" });
 
     try {
-      await fetch('http://127.0.0.1:3001/api/vote', {
+      await fetch('/api/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -165,7 +164,7 @@ export default function App() {
     };
 
     try {
-      const response = await fetch('http://127.0.0.1:3001/api/admin/update', {
+      const response = await fetch('/api/admin/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
