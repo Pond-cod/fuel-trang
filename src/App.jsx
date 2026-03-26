@@ -30,6 +30,8 @@ export default function App() {
   const [voteModal, setVoteModal] = useState({ isOpen: false, stationId: null, fuelKey: null, stationName: "", fuelName: "" });
   const [editModal, setEditModal] = useState({ isOpen: false, station: null });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -78,7 +80,7 @@ export default function App() {
       const current = s.fuels[voteModal.fuelKey];
       return { ...s, lastUpdated: new Date().toLocaleString('th-TH'), fuels: { ...s.fuels, [voteModal.fuelKey]: { ...current, [type]: current[type] + 1 } } };
     }));
-    const payload = { stationId: voteModal.stationId, fuelKey: voteModal.fuelKey, voteType: type };
+    const payload = { stationId: voteModal.stationId, fuelKey: voteModal.fuelKey, voteType: type, userName: user?.name || '', userEmail: user?.email || '' };
     setVoteModal({ isOpen: false, stationId: null, fuelKey: null, stationName: "", fuelName: "" });
     try {
       const res = await fetch('/api/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -218,6 +220,58 @@ export default function App() {
       </div>
     </aside>
   );
+
+  const LeaderboardView = ({ leaderboard, loading, fetchLeaderboard }) => {
+    useEffect(() => { fetchLeaderboard(); }, []);
+    const medals = ['🥇', '🥈', '🥉'];
+    return (
+      <div className="p-4 md:p-5 max-w-2xl mx-auto space-y-4">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl p-5 text-white shadow-lg shadow-purple-300/30 text-center">
+          <p className="text-4xl mb-2">🏆</p>
+          <h2 className="text-xl font-black">นักรายงานข่าวชาวตรัง</h2>
+          <p className="text-xs opacity-80 mt-1">ขอบคุณทุกคนที่ร่วมรายงานสถานะให้ชาวตรัง ❤️</p>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col items-center py-12 text-slate-400">
+            <RefreshCw size={24} className="animate-spin mb-3 text-purple-400" />
+            <p className="text-sm">กำลังโหลดข้อมูล...</p>
+          </div>
+        ) : leaderboard.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
+            <p className="text-4xl mb-3">📭</p>
+            <p className="font-bold text-slate-500">ยังไม่มีข้อมูลการรายงาน</p>
+            <p className="text-xs text-slate-400 mt-1">เริ่มโหวตสถานะน้ำมันเลย!</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            {leaderboard.map((entry, i) => (
+              <div key={i} className={`flex items-center gap-3 px-5 py-3.5 border-b border-slate-50 last:border-b-0 ${i < 3 ? 'bg-purple-50/50' : ''} hover:bg-purple-50/30 transition-colors`}>
+                <div className="w-8 text-center flex-shrink-0">
+                  {i < 3 ? (
+                    <span className="text-xl">{medals[i]}</span>
+                  ) : (
+                    <span className="text-sm font-black text-slate-400">#{i + 1}</span>
+                  )}
+                </div>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 ${i === 0 ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300' : i === 1 ? 'bg-slate-100 text-slate-600 border-2 border-slate-300' : i === 2 ? 'bg-orange-100 text-orange-700 border-2 border-orange-300' : 'bg-purple-100 text-purple-600 border border-purple-200'}`}>
+                  {entry.name ? entry.name.charAt(0).toUpperCase() : '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-bold text-sm truncate ${i < 3 ? 'text-slate-800' : 'text-slate-600'}`}>{entry.name || 'Anonymous'}</p>
+                  <p className="text-[10px] text-slate-400 truncate">รายงานล่าสุด {entry.lastVote}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className={`text-lg font-black ${i === 0 ? 'text-yellow-600' : i < 3 ? 'text-purple-600' : 'text-slate-600'}`}>{entry.voteCount}</p>
+                  <p className="text-[9px] text-slate-400 font-bold">ครั้ง</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex h-screen bg-purple-50/30 font-sans overflow-hidden text-slate-800">
@@ -374,11 +428,14 @@ export default function App() {
           )}
 
           {activeView === 'leaderboard' && (
-            <div className="flex flex-col items-center justify-center h-full text-center p-6">
-              <p className="text-5xl mb-4">🌟</p>
-              <h2 className="text-xl font-black text-slate-700">นักรายงานข่าวชาวตรัง</h2>
-              <p className="text-slate-400 text-sm mt-1">ฟีเจอร์นี้กำลังจะมาเร็วๆ นี้ครับ!</p>
-            </div>
+            <LeaderboardView leaderboard={leaderboard} loading={leaderboardLoading} fetchLeaderboard={async () => {
+              setLeaderboardLoading(true);
+              try {
+                const res = await fetch('/api/leaderboard');
+                if (res.ok) setLeaderboard(await res.json());
+              } catch(e) { console.error(e); }
+              setLeaderboardLoading(false);
+            }} />
           )}
 
           {activeView === 'admin' && isAdminLoggedIn && (

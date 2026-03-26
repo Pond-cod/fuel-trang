@@ -66,7 +66,7 @@ app.get('/api/stations', async (req, res) => {
 
 // POST /api/vote
 app.post('/api/vote', async (req, res) => {
-  const { stationId, fuelKey, voteType } = req.body;
+  const { stationId, fuelKey, voteType, userName, userEmail } = req.body;
   try {
     await initDoc();
     const sheet = doc.sheetsByIndex[0];
@@ -81,6 +81,29 @@ app.post('/api/vote', async (req, res) => {
         lastUpdated: new Date().toLocaleString('th-TH')
       });
       await row.save();
+
+      // Log vote to votes_log sheet
+      try {
+        let logSheet = doc.sheetsByTitle['votes_log'];
+        if (!logSheet) {
+          logSheet = await doc.addSheet({
+            title: 'votes_log',
+            headerValues: ['timestamp', 'user_name', 'user_email', 'station_id', 'station_name', 'fuel_type', 'vote_type']
+          });
+        }
+        await logSheet.addRow({
+          timestamp: new Date().toLocaleString('th-TH'),
+          user_name: userName || 'Anonymous',
+          user_email: userEmail || '',
+          station_id: stationId,
+          station_name: row.get('name'),
+          fuel_type: fuelKey,
+          vote_type: voteType
+        });
+      } catch (logErr) {
+        console.error('Vote log error:', logErr.message);
+      }
+
       res.json({ status: 'success' });
     } else {
       res.status(404).json({ error: 'Station not found' });
@@ -88,6 +111,36 @@ app.post('/api/vote', async (req, res) => {
   } catch (error) {
     console.error('Error voting:', error);
     res.status(500).json({ error: 'Failed to vote' });
+  }
+});
+
+// GET /api/leaderboard
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    await initDoc();
+    const logSheet = doc.sheetsByTitle['votes_log'];
+    if (!logSheet) {
+      return res.json([]);
+    }
+    const rows = await logSheet.getRows();
+    const userMap = {};
+    rows.forEach(row => {
+      const name = row.get('user_name') || 'Anonymous';
+      const email = row.get('user_email') || '';
+      const key = email || name;
+      if (!userMap[key]) {
+        userMap[key] = { name, email, voteCount: 0, lastVote: '' };
+      }
+      userMap[key].voteCount += 1;
+      userMap[key].lastVote = row.get('timestamp') || '';
+    });
+    const leaderboard = Object.values(userMap)
+      .sort((a, b) => b.voteCount - a.voteCount)
+      .slice(0, 50);
+    res.json(leaderboard);
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
   }
 });
 
