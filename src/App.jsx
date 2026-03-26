@@ -544,30 +544,36 @@ export default function App() {
             <div className="p-4 md:p-5 max-w-6xl mx-auto space-y-4">
 
               {/* Hero Banner */}
-              <div className="bg-gradient-to-r from-purple-500 to-purple-400 rounded-2xl p-6 text-white shadow-lg shadow-purple-300/30 overflow-hidden relative">
-                <div className="flex items-center justify-between relative z-10">
-                  <div className="flex-1">
-                    <p className="text-xs font-bold opacity-80 mb-1">🤝 คนตรังช่วยคนตรัง</p>
-                    <h2 className="text-xl font-black leading-tight">รู้ก่อน ออกก่อน<br />ไม่ต้องเสียเวลาเข้าคิว!</h2>
-                    <p className="text-xs opacity-80 mt-2">อัปเดตจากชาวตรังจริงๆ ทุกวัน</p>
-                    
-                    <div className="mt-4 flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-xl p-2 pr-4 w-fit border border-white/10 animate-pulse-slow">
-                      <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                        <Heart size={14} className="text-white fill-white" />
+              <div className="bg-gradient-to-r from-purple-500 to-purple-400 rounded-[32px] p-6 md:p-8 text-white shadow-xl shadow-purple-300/40 overflow-hidden relative border border-white/10">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                  <div className="text-center md:text-left">
+                    <p className="text-[10px] md:text-xs font-black uppercase tracking-widest opacity-90 mb-2">🤝 คนตรังช่วยคนตรัง</p>
+                    <h2 className="text-2xl md:text-3xl font-black leading-[1.1] mb-2">รู้ก่อน ออกก่อน<br />ไม่ต้องเสียเวลาเข้าคิว!</h2>
+                    <p className="text-xs opacity-80 font-medium">อัปเดตสถานะปั๊มจากชาวตรังตัวจริง ทุกวัน</p>
+                  </div>
+
+                  {/* Moved Heart CTA to the empty space */}
+                  <div className="flex-1 flex justify-center md:justify-center">
+                    <div className="bg-white/15 backdrop-blur-xl rounded-[28px] p-4 pr-7 border border-white/25 shadow-2xl shadow-purple-900/10 flex items-center gap-4 hover:scale-[1.02] transition-all cursor-default group animate-pulse-slow">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-white/30 to-white/10 flex items-center justify-center flex-shrink-0 shadow-lg border border-white/20 group-hover:scale-110 transition-transform">
+                        <Heart size={22} className="text-white fill-white" />
                       </div>
-                      <p className="text-[10px] font-bold">ช่วยกันรายงานสถานะที่แต่ละปั๊ม เพื่อเพื่อนชาวตรังครับ 💜</p>
+                      <div>
+                        <p className="text-sm font-black leading-tight mb-1">ช่วยกันรายงานสถานะ</p>
+                        <p className="text-[10px] opacity-80 font-bold leading-tight">บอกเพื่อนชาวตรังว่าปั๊มไหนมี/หมด 💜</p>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-4xl font-black">{isLoading ? '...' : stats.total}</p>
-                    <p className="text-xs opacity-80">ปั๊มในตรัง</p>
+                  <div className="text-center md:text-right flex-shrink-0 bg-white/10 backdrop-blur-md px-6 py-4 rounded-[24px] border border-white/10 min-w-[120px]">
+                    <p className="text-4xl md:text-5xl font-black">{isLoading ? '...' : stats.total}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-80">ปั๊มในตรัง</p>
                   </div>
                 </div>
                 
                 {/* Decorative background shapes */}
-                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
-                <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-32 h-32 bg-purple-300/10 rounded-full blur-xl" />
+                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-48 h-48 bg-purple-300/20 rounded-full blur-2xl" />
               </div>
 
               {/* Stat Row */}
