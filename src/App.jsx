@@ -210,7 +210,20 @@ export default function App() {
     );
   };
 
-  const navigate = (view) => { setActiveView(view); setSidebarOpen(false); };
+  const fetchLeaderboard = async () => {
+    setLeaderboardLoading(true);
+    try {
+      const res = await fetch('/api/leaderboard');
+      if (res.ok) setLeaderboard(await res.json());
+    } catch (e) { console.error(e); }
+    setLeaderboardLoading(false);
+  };
+
+  const navigate = (view) => {
+    setActiveView(view);
+    setSidebarOpen(false);
+    if (view === 'leaderboard') fetchLeaderboard();
+  };
 
   const NavBtn = ({ icon, label, view }) => (
     <button onClick={() => navigate(view)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeView === view ? 'bg-purple-500 text-white shadow-md' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-700'}`}>
@@ -275,57 +288,7 @@ export default function App() {
     </aside>
   );
 
-  const LeaderboardView = ({ leaderboard, loading, fetchLeaderboard }) => {
-    useEffect(() => { fetchLeaderboard(); }, []);
-    const medals = ['🥇', '🥈', '🥉'];
-    return (
-      <div className="p-4 md:p-5 max-w-2xl mx-auto space-y-4">
-        <div className="bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl p-5 text-white shadow-lg shadow-purple-300/30 text-center">
-          <p className="text-4xl mb-2">🏆</p>
-          <h2 className="text-xl font-black">นักรายงานข่าวชาวตรัง</h2>
-          <p className="text-xs opacity-80 mt-1">ขอบคุณทุกคนที่ร่วมรายงานสถานะให้ชาวตรัง ❤️</p>
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col items-center py-12 text-slate-400">
-            <RefreshCw size={24} className="animate-spin mb-3 text-purple-400" />
-            <p className="text-sm">กำลังโหลดข้อมูล...</p>
-          </div>
-        ) : leaderboard.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
-            <p className="text-4xl mb-3">📭</p>
-            <p className="font-bold text-slate-500">ยังไม่มีข้อมูลการรายงาน</p>
-            <p className="text-xs text-slate-400 mt-1">เริ่มโหวตสถานะน้ำมันเลย!</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            {leaderboard.map((entry, i) => (
-              <div key={i} className={`flex items-center gap-3 px-5 py-3.5 border-b border-slate-50 last:border-b-0 ${i < 3 ? 'bg-purple-50/50' : ''} hover:bg-purple-50/30 transition-colors`}>
-                <div className="w-8 text-center flex-shrink-0">
-                  {i < 3 ? (
-                    <span className="text-xl">{medals[i]}</span>
-                  ) : (
-                    <span className="text-sm font-black text-slate-400">#{i + 1}</span>
-                  )}
-                </div>
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 ${i === 0 ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300' : i === 1 ? 'bg-slate-100 text-slate-600 border-2 border-slate-300' : i === 2 ? 'bg-orange-100 text-orange-700 border-2 border-orange-300' : 'bg-purple-100 text-purple-600 border border-purple-200'}`}>
-                  {entry.name ? entry.name.charAt(0).toUpperCase() : '?'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`font-bold text-sm truncate ${i < 3 ? 'text-slate-800' : 'text-slate-600'}`}>{entry.name || 'Anonymous'}</p>
-                  <p className="text-[10px] text-slate-400 truncate">รายงานล่าสุด {entry.lastVote}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className={`text-lg font-black ${i === 0 ? 'text-yellow-600' : i < 3 ? 'text-purple-600' : 'text-slate-600'}`}>{entry.voteCount}</p>
-                  <p className="text-[9px] text-slate-400 font-bold">ครั้ง</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
+  const medals = ['🥇', '🥈', '🥉'];
 
   return (
     <div className="flex h-screen bg-purple-50/30 font-sans overflow-hidden text-slate-800">
@@ -482,14 +445,46 @@ export default function App() {
           )}
 
           {activeView === 'leaderboard' && (
-            <LeaderboardView leaderboard={leaderboard} loading={leaderboardLoading} fetchLeaderboard={async () => {
-              setLeaderboardLoading(true);
-              try {
-                const res = await fetch('/api/leaderboard');
-                if (res.ok) setLeaderboard(await res.json());
-              } catch(e) { console.error(e); }
-              setLeaderboardLoading(false);
-            }} />
+            <div className="p-4 md:p-5 max-w-2xl mx-auto space-y-4">
+              <div className="bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl p-5 text-white shadow-lg shadow-purple-300/30 text-center">
+                <p className="text-4xl mb-2">🏆</p>
+                <h2 className="text-xl font-black">นักรายงานข่าวชาวตรัง</h2>
+                <p className="text-xs opacity-80 mt-1">ขอบคุณทุกคนที่ร่วมรายงานสถานะให้ชาวตรัง ❤️</p>
+              </div>
+              {leaderboardLoading ? (
+                <div className="flex flex-col items-center py-12 text-slate-400">
+                  <RefreshCw size={24} className="animate-spin mb-3 text-purple-400" />
+                  <p className="text-sm">กำลังโหลดข้อมูล...</p>
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
+                  <p className="text-4xl mb-3">📭</p>
+                  <p className="font-bold text-slate-500">ยังไม่มีข้อมูลการรายงาน</p>
+                  <p className="text-xs text-slate-400 mt-1">เริ่มโหวตสถานะน้ำมันเลย!</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                  {leaderboard.map((entry, i) => (
+                    <div key={i} className={`flex items-center gap-3 px-5 py-3.5 border-b border-slate-50 last:border-b-0 ${i < 3 ? 'bg-purple-50/50' : ''} hover:bg-purple-50/30 transition-colors`}>
+                      <div className="w-8 text-center flex-shrink-0">
+                        {i < 3 ? <span className="text-xl">{medals[i]}</span> : <span className="text-sm font-black text-slate-400">#{i + 1}</span>}
+                      </div>
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 ${i === 0 ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300' : i === 1 ? 'bg-slate-100 text-slate-600 border-2 border-slate-300' : i === 2 ? 'bg-orange-100 text-orange-700 border-2 border-orange-300' : 'bg-purple-100 text-purple-600 border border-purple-200'}`}>
+                        {entry.name ? entry.name.charAt(0).toUpperCase() : '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-bold text-sm truncate ${i < 3 ? 'text-slate-800' : 'text-slate-600'}`}>{entry.name || 'Anonymous'}</p>
+                        <p className="text-[10px] text-slate-400 truncate">รายงานล่าสุด {entry.lastVote}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className={`text-lg font-black ${i === 0 ? 'text-yellow-600' : i < 3 ? 'text-purple-600' : 'text-slate-600'}`}>{entry.voteCount}</p>
+                        <p className="text-[9px] text-slate-400 font-bold">ครั้ง</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {activeView === 'admin' && isAdminLoggedIn && (
