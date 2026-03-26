@@ -260,11 +260,7 @@ export default function App() {
       const res = await fetch('/api/leaderboard');
       if (res.ok) {
         const data = await res.json();
-        const modifiedData = data.map(entry => ({
-          ...entry,
-          name: entry.name === 'hatsachai panasri' ? 'it' : entry.name
-        }));
-        setLeaderboard(modifiedData);
+        setLeaderboard(data);
       }
     } catch (e) { console.error(e); }
     setLeaderboardLoading(false);
