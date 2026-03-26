@@ -439,4 +439,3 @@ app.post('/api/comments', async (req, res) => {
 });
 
 export default app;
-```
