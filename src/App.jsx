@@ -532,6 +532,19 @@ export default function App() {
                 ))}
               </div>
 
+              {/* Community Encouragement Banner */}
+              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-4 animate-pulse-slow">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <Heart size={20} className="text-emerald-600 fill-emerald-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-black text-emerald-800">ร่วมรายงานสถานะน้ำมัน!</p>
+                  <p className="text-[10px] text-emerald-600 font-bold leading-relaxed">
+                    เพียงกดยืนยันสถานะที่แต่ละปั๊ม เพื่อช่วยให้เพื่อนชาวตรังประหยัดเวลาและน้ำมัน 💜
+                  </p>
+                </div>
+              </div>
+
               {/* Search & Filter */}
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 space-y-2">
                 <div className="relative">
