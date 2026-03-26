@@ -66,8 +66,8 @@ async function initDoc() {
     }
 
   } catch (err) {
-    console.error('Failed to load doc info or create sheets:', err.message);
-    throw err;
+    console.error('CRITICAL: initDoc failed:', err.message || err);
+    throw new Error(`Initialization Error: ${err.message || 'Unknown error'}`);
   }
 }
 
@@ -95,7 +95,7 @@ app.get('/api/stations', async (req, res) => {
     res.json(stations);
   } catch (error) {
     console.error('Error fetching stations:', error);
-    res.status(500).json({ error: 'Failed to fetch stations' });
+    res.status(500).json({ error: 'Failed to fetch stations', details: error.message });
   }
 });
 
@@ -175,7 +175,7 @@ app.get('/api/leaderboard', async (req, res) => {
     res.json(leaderboard);
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
-    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    res.status(500).json({ error: 'Failed to fetch leaderboard', details: error.message });
   }
 });
 
@@ -249,8 +249,8 @@ app.get('/api/news', async (req, res) => {
     })).reverse(); // newest first
     res.json(news);
   } catch (error) {
-    console.error('Error fetching news:', error);
-    res.status(500).json({ error: 'Failed to fetch news' });
+    console.error(error);
+    res.status(500).json({ error: 'Failed', details: error.message });
   }
 });
 
@@ -272,8 +272,8 @@ app.post('/api/news', async (req, res) => {
     });
     res.json({ status: 'success' });
   } catch (error) {
-    console.error('Error creating news:', error);
-    res.status(500).json({ error: 'Failed to create news' });
+    console.error('Error reporting status:', error);
+    res.status(500).json({ error: 'Failed' , details: error.message });
   }
 });
 
