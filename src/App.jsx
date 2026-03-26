@@ -80,7 +80,15 @@ export default function App() {
     }));
     const payload = { stationId: voteModal.stationId, fuelKey: voteModal.fuelKey, voteType: type };
     setVoteModal({ isOpen: false, stationId: null, fuelKey: null, stationName: "", fuelName: "" });
-    try { await fetch('/api/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } catch (e) { }
+    try {
+      const res = await fetch('/api/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const result = await res.json();
+      console.log('Vote result:', result);
+      // Re-fetch fresh data from server after 1 second
+      setTimeout(() => fetchData(), 1000);
+    } catch (e) {
+      console.error('Vote error:', e);
+    }
   };
 
   const saveAdminEdit = async (updated) => {
