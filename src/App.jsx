@@ -36,7 +36,7 @@ export default function App() {
   const [news, setNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsDetailModal, setNewsDetailModal] = useState({ isOpen: false, item: null });
-  const [newsFormModal, setNewsFormModal] = useState({ isOpen: false, item: null, imageUrls: [''] });
+  const [newsFormModal, setNewsFormModal] = useState({ isOpen: false, item: null, imageUrls: [''], videoUrls: [''] });
   const logoutTimerRef = useRef(null);
 
   const doLogout = () => {
@@ -236,25 +236,36 @@ export default function App() {
     setIsUpdating(true);
     try {
       const url = form.id ? '/api/news/update' : '/api/news';
-      // Store images as JSON string
-      const payload = { ...form, image_url: JSON.stringify(newsFormModal.imageUrls.filter(u => u.trim() !== '')) };
+      // Store images and videos as JSON string
+      const payload = { 
+        ...form, 
+        image_url: JSON.stringify(newsFormModal.imageUrls.filter(u => u.trim() !== '')),
+        video_url: JSON.stringify(newsFormModal.videoUrls.filter(u => u.trim() !== ''))
+      };
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (res.ok) { setNewsFormModal({ isOpen: false, item: null, imageUrls: [''] }); fetchNews(); }
+      if (res.ok) { setNewsFormModal({ isOpen: false, item: null, imageUrls: [''], videoUrls: [''] }); fetchNews(); }
     } catch (e) { console.error(e); }
     setIsUpdating(false);
   };
 
   const openNewsForm = (item = null) => {
     let urls = [''];
-    if (item && item.image_url) {
-      try {
-        const parsed = JSON.parse(item.image_url);
-        urls = Array.isArray(parsed) ? (parsed.length > 0 ? parsed : ['']) : [item.image_url];
-      } catch (e) {
-        urls = [item.image_url];
+    let vurls = [''];
+    if (item) {
+      if (item.image_url) {
+        try {
+          const parsed = JSON.parse(item.image_url);
+          urls = Array.isArray(parsed) ? (parsed.length > 0 ? parsed : ['']) : [item.image_url];
+        } catch (e) { urls = [item.image_url]; }
+      }
+      if (item.video_url) {
+        try {
+          const parsed = JSON.parse(item.video_url);
+          vurls = Array.isArray(parsed) ? (parsed.length > 0 ? parsed : ['']) : [item.video_url];
+        } catch (e) { vurls = [item.video_url]; }
       }
     }
-    setNewsFormModal({ isOpen: true, item, imageUrls: urls });
+    setNewsFormModal({ isOpen: true, item, imageUrls: urls, videoUrls: vurls });
   };
 
   const addImageField = () => setNewsFormModal(prev => ({ ...prev, imageUrls: [...prev.imageUrls, ''] }));
@@ -266,6 +277,17 @@ export default function App() {
   const removeImageField = (index) => setNewsFormModal(prev => {
     const urls = prev.imageUrls.filter((_, i) => i !== index);
     return { ...prev, imageUrls: urls.length > 0 ? urls : [''] };
+  });
+
+  const addVideoField = () => setNewsFormModal(prev => ({ ...prev, videoUrls: [...prev.videoUrls, ''] }));
+  const updateVideoField = (index, val) => setNewsFormModal(prev => {
+    const vurls = [...prev.videoUrls];
+    vurls[index] = val;
+    return { ...prev, videoUrls: vurls };
+  });
+  const removeVideoField = (index) => setNewsFormModal(prev => {
+    const vurls = prev.videoUrls.filter((_, i) => i !== index);
+    return { ...prev, videoUrls: vurls.length > 0 ? vurls : [''] };
   });
 
   const deleteNews = async (id) => {
@@ -527,8 +549,11 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {news.map((item) => {
                     let images = [];
+                    let videos = [];
                     try { images = JSON.parse(item.image_url); if (!Array.isArray(images)) images = [item.image_url]; }
                     catch(e) { images = item.image_url ? [item.image_url] : []; }
+                    try { videos = JSON.parse(item.video_url); if (!Array.isArray(videos)) videos = [item.video_url]; }
+                    catch(e) { videos = item.video_url ? [item.video_url] : []; }
 
                     return (
                       <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md hover:border-purple-200 transition-all flex flex-col group">
@@ -545,7 +570,7 @@ export default function App() {
                         <div className="p-4 flex-1 flex flex-col">
                           <div className="flex justify-between items-start mb-2">
                             <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">{item.created_at}</p>
-                            {item.video_url && <span className="p-1 bg-red-100 text-red-600 rounded-md" title="มีวีดีโอ"><Video size={10} /></span>}
+                            {videos.length > 0 && <span className="p-1 bg-red-100 text-red-600 rounded-md" title="มีวีดีโอ"><Video size={10} /></span>}
                           </div>
                           <h3 className="font-black text-slate-800 mb-2 line-clamp-2 leading-tight">{item.title}</h3>
                           <p className="text-xs text-slate-500 line-clamp-3 mb-4 leading-relaxed">{item.content}</p>
@@ -788,30 +813,42 @@ export default function App() {
                 {newsDetailModal.item.content}
               </div>
 
-              {newsDetailModal.item.video_url && (
-                <div className="mb-6 rounded-2xl overflow-hidden border border-slate-100 shadow-inner">
-                  <div className="bg-slate-50 p-3 flex items-center gap-2 border-b border-slate-100">
-                    <Video size={16} className="text-red-500" />
-                    <span className="text-xs font-bold text-slate-500">วีดีโอประกอบข่าว</span>
-                  </div>
-                  <div className="aspect-video bg-black flex items-center justify-center">
-                    {newsDetailModal.item.video_url.includes('youtube.com') || newsDetailModal.item.video_url.includes('youtu.be') ? (
-                      <iframe 
-                        className="w-full h-full"
-                        src={newsDetailModal.item.video_url.replace('watch?v=', 'embed/').split('&')[0]} 
-                        title="YouTube video player" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowFullScreen
-                      ></iframe>
-                    ) : (
-                      <a href={newsDetailModal.item.video_url} target="_blank" rel="noopener noreferrer" className="text-white hover:text-purple-300 transition-colors flex flex-col items-center gap-2">
-                        <Video size={40} />
-                        <span className="text-xs font-bold">กดเพื่อรับชมวีดีโอ</span>
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
+                {(() => {
+                  let videos = [];
+                  try { videos = JSON.parse(newsDetailModal.item.video_url); if (!Array.isArray(videos)) videos = [newsDetailModal.item.video_url]; }
+                  catch(e) { videos = newsDetailModal.item.video_url ? [newsDetailModal.item.video_url] : []; }
+                  
+                  if (videos.length === 0) return null;
+
+                  return (
+                    <div className="space-y-4 mb-6">
+                      {videos.map((vurl, i) => (
+                        <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 shadow-inner">
+                          <div className="bg-slate-50 p-2.5 flex items-center gap-2 border-b border-slate-100">
+                            <Video size={14} className="text-red-500" />
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">วีดีโอที่ {i + 1}</span>
+                          </div>
+                          <div className="aspect-video bg-black flex items-center justify-center">
+                            {vurl.includes('youtube.com') || vurl.includes('youtu.be') ? (
+                              <iframe 
+                                className="w-full h-full"
+                                src={vurl.replace('watch?v=', 'embed/').split('&')[0]} 
+                                title="YouTube video player" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowFullScreen
+                              ></iframe>
+                            ) : (
+                              <a href={vurl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-purple-300 transition-colors flex flex-col items-center gap-2">
+                                <Video size={32} />
+                                <span className="text-[10px] font-bold">กดเพื่อรับชมวีดีโอ</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
 
               {newsDetailModal.item.reference_url && (
                 <a href={newsDetailModal.item.reference_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-50 text-purple-700 rounded-xl text-xs font-black hover:bg-purple-100 transition-all border border-purple-100">
@@ -841,7 +878,6 @@ export default function App() {
                 id: newsFormModal.item?.id,
                 title: fd.get('title'),
                 content: fd.get('content'),
-                video_url: fd.get('video_url'),
                 reference_url: fd.get('reference_url')
               });
             }} className="p-6 space-y-4">
@@ -881,9 +917,32 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Video size={10} /> URL วีดีโอประกอบ (YouTube)</label>
-                <input name="video_url" defaultValue={newsFormModal.item?.video_url} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm" placeholder="https://..." />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pl-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Video size={10} /> URL วีดีโอประกอบ (หลายรายการได้)</label>
+                  <button type="button" onClick={addVideoField} className="text-[10px] font-black text-purple-600 hover:text-purple-800 flex items-center gap-1 bg-purple-50 px-2 py-1 rounded-lg transition-all">
+                    <Plus size={10} /> เพิ่มวีดีโอ
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                  {newsFormModal.videoUrls.map((url, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input 
+                        value={url} 
+                        onChange={(e) => updateVideoField(index, e.target.value)}
+                        className="flex-1 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 text-xs sm:text-sm" 
+                        placeholder={`URL วีดีโอที่ ${index + 1}... (Youtube)`} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => removeVideoField(index)}
+                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><ExternalLink size={10} /> URL อ้างอิงแหล่งที่มา</label>
