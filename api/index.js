@@ -17,6 +17,12 @@ const USER_NEWS_SHEET = 'user_news';
 const COMMENTS_SHEET = 'comments';
 const CONFIG_SHEET = 'config';
 
+const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
+const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY 
+  ? process.env.GOOGLE_PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n') 
+  : null;
+
 // Shared instance for warm starts
 let cachedDoc = null;
 let lastInit = 0;
@@ -392,7 +398,7 @@ app.get('/api/user-news', async (req, res) => {
     res.json(data);
   } catch (e) {
     console.error('Error fetching user news:', e);
-    res.status(500).send(e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -411,7 +417,7 @@ app.post('/api/user-news', async (req, res) => {
     res.json({ id, status: 'success' });
   } catch (e) {
     console.error('Error creating user news:', e);
-    res.status(500).send(e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -434,7 +440,7 @@ app.get('/api/comments/:news_id', async (req, res) => {
     res.json(data);
   } catch (e) {
     console.error('Error fetching comments:', e);
-    res.status(500).send(e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -453,7 +459,7 @@ app.post('/api/comments', async (req, res) => {
     res.json({ id, status: 'success' });
   } catch (e) {
     console.error('Error creating comment:', e);
-    res.status(500).send(e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
