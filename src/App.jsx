@@ -446,10 +446,15 @@ export default function App() {
             <Lock size={11} /> ออก Admin
           </button>
         )}
-        <div className="flex justify-end">
-          <button onClick={() => isAdminLoggedIn ? setActiveView('admin') : setShowAdminLoginModal(true)} className="p-1.5 text-slate-200 hover:text-slate-400 transition-colors" title="Admin">
-            <Settings size={13} />
-          </button>
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex justify-end w-full">
+            <button onClick={() => isAdminLoggedIn ? setActiveView('admin') : setShowAdminLoginModal(true)} className="p-1.5 text-slate-200 hover:text-slate-400 transition-colors" title="Admin">
+              <Settings size={13} />
+            </button>
+          </div>
+          <a href="https://dee-dev-iot.vercel.app" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-slate-300 hover:text-purple-400 transition-all flex items-center gap-1 group">
+            สร้างโดย <span className="text-slate-400 group-hover:text-purple-500 transition-colors">DeeDevIOT</span>
+          </a>
         </div>
       </div>
     </aside>
