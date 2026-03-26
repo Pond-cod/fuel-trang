@@ -3,7 +3,7 @@ import {
   Search, MapPin, RefreshCw, Droplet, Fuel, 
   X, Clock, CheckCircle2, XCircle,
   LogOut, LogIn, Edit, Settings, Save, Lock, Heart,
-  Menu, Users, Star
+  Menu, Users, Star, Megaphone, Trash2, Plus, ExternalLink, Image, Video
 } from 'lucide-react';
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
@@ -33,6 +33,10 @@ export default function App() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [news, setNews] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsDetailModal, setNewsDetailModal] = useState({ isOpen: false, item: null });
+  const [newsFormModal, setNewsFormModal] = useState({ isOpen: false, item: null });
   const logoutTimerRef = useRef(null);
 
   const doLogout = () => {
@@ -219,10 +223,39 @@ export default function App() {
     setLeaderboardLoading(false);
   };
 
+  const fetchNews = async () => {
+    setNewsLoading(true);
+    try {
+      const res = await fetch('/api/news');
+      if (res.ok) setNews(await res.json());
+    } catch (e) { console.error(e); }
+    setNewsLoading(false);
+  };
+
+  const saveNews = async (form) => {
+    setIsUpdating(true);
+    try {
+      const url = form.id ? '/api/news/update' : '/api/news';
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+      if (res.ok) { setNewsFormModal({ isOpen: false, item: null }); fetchNews(); }
+    } catch (e) { console.error(e); }
+    setIsUpdating(false);
+  };
+
+  const deleteNews = async (id) => {
+    if (!confirm('ลบข่าวนี้?')) return;
+    try {
+      const res = await fetch('/api/news/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+      if (res.ok) fetchNews();
+    } catch (e) { console.error(e); }
+  };
+
   const navigate = (view) => {
     setActiveView(view);
     setSidebarOpen(false);
     if (view === 'leaderboard') fetchLeaderboard();
+    if (view === 'news') fetchNews();
+    if (view === 'admin') fetchNews();
   };
 
   const NavBtn = ({ icon, label, view }) => (
@@ -249,6 +282,7 @@ export default function App() {
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-1">
         <NavBtn icon={<Fuel size={17} />} label="ภาพรวมน้ำมัน" view="dashboard" />
+        <NavBtn icon={<Megaphone size={17} />} label="ประชาสัมพันธ์" view="news" />
         <NavBtn icon={<Users size={17} />} label="นักรายงานข่าว" view="leaderboard" />
         {isAdminLoggedIn && <NavBtn icon={<Settings size={17} />} label="จัดการระบบ" view="admin" />}
       </nav>
@@ -444,6 +478,59 @@ export default function App() {
             </div>
           )}
 
+          {activeView === 'news' && (
+            <div className="p-4 md:p-5 max-w-4xl mx-auto space-y-4">
+              <div className="bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl p-5 text-white shadow-lg shadow-purple-300/30 text-center">
+                <p className="text-4xl mb-2">📢</p>
+                <h2 className="text-xl font-black">ประชาสัมพันธ์ชาวตรัง</h2>
+                <p className="text-xs opacity-80 mt-1">อัปเดตราคาน้ำมันและข่าวสารสำคัญเพื่อคนตรัง</p>
+              </div>
+
+              {newsLoading ? (
+                <div className="flex flex-col items-center py-12 text-slate-400">
+                  <RefreshCw size={24} className="animate-spin mb-3 text-purple-400" />
+                  <p className="text-sm">กำลังโหลดข่าวสาร...</p>
+                </div>
+              ) : news.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center shadow-sm">
+                  <p className="text-5xl mb-3">🗞️</p>
+                  <p className="font-bold text-slate-500">ยังไม่มีข่าวสารในขณะนี้</p>
+                  <p className="text-xs text-slate-400 mt-1">ติดตามข่าวสารใหม่ๆ ได้ที่นี่เร็วๆ นี้</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {news.map((item) => (
+                    <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md hover:border-purple-200 transition-all flex flex-col group">
+                      {item.image_url && (
+                        <div className="aspect-video w-full overflow-hidden bg-slate-100">
+                          <img src={item.image_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        </div>
+                      )}
+                      <div className="p-4 flex-1 flex flex-col">
+                        <div className="flex justify-between items-start mb-2">
+                          <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">{item.created_at}</p>
+                          {item.video_url && <span className="p-1 bg-red-100 text-red-600 rounded-md" title="มีวีดีโอ"><Video size={10} /></span>}
+                        </div>
+                        <h3 className="font-black text-slate-800 mb-2 line-clamp-2 leading-tight">{item.title}</h3>
+                        <p className="text-xs text-slate-500 line-clamp-3 mb-4 leading-relaxed">{item.content}</p>
+                        <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
+                          <button onClick={() => setNewsDetailModal({ isOpen: true, item })} className="text-xs font-black text-purple-600 hover:text-purple-800 transition-colors flex items-center gap-1">
+                            อ่านเนื้อหาทั้งหมด <Plus size={12} />
+                          </button>
+                          {item.reference_url && (
+                            <a href={item.reference_url} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-purple-500 transition-colors">
+                              <ExternalLink size={14} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {activeView === 'leaderboard' && (
             <div className="p-4 md:p-5 max-w-2xl mx-auto space-y-4">
               <div className="bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl p-5 text-white shadow-lg shadow-purple-300/30 text-center">
@@ -488,15 +575,27 @@ export default function App() {
           )}
 
           {activeView === 'admin' && isAdminLoggedIn && (
-            <div className="p-4 md:p-5 max-w-3xl mx-auto">
+            <div className="p-4 md:p-5 max-w-4xl mx-auto space-y-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-black text-slate-700">จัดการระบบ</h2>
+                <div className="flex gap-2">
+                  <button onClick={() => setNewsFormModal({ isOpen: true, item: null })} className="bg-purple-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md hover:bg-purple-700 transition-all flex items-center gap-1.5">
+                    <Megaphone size={14} /> เพิ่มข่าวประชาสัมพันธ์
+                  </button>
+                </div>
+              </div>
+
+              {/* Stations Table */}
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100"><h3 className="font-bold flex items-center gap-2 text-slate-700"><Settings size={16} className="text-purple-500" /> จัดการสถานีบริการ</h3></div>
-                <div className="overflow-x-auto">
+                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                  <h3 className="font-bold flex items-center gap-2 text-slate-700"><MapPin size={16} className="text-purple-500" /> รายชื่อสถานีบริการ</h3>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{data.length} สถานี</span>
+                </div>
+                <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 text-xs text-slate-400 uppercase font-bold">
+                    <thead className="bg-slate-50/80 text-[10px] text-slate-400 uppercase font-bold sticky top-0 z-10">
                       <tr>
-                        <th className="px-5 py-3">ปั๊ม</th>
-                        <th className="px-5 py-3 hidden sm:table-cell">อำเภอ</th>
+                        <th className="px-5 py-3">ปั๊ม / อำเภอ</th>
                         <th className="px-5 py-3 text-right">จัดการ</th>
                       </tr>
                     </thead>
@@ -506,13 +605,55 @@ export default function App() {
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-2.5">
                               <BrandBadge brand={s.brand} />
-                              <div><p className="font-bold text-slate-700 text-sm">{s.name}</p><p className="text-xs text-slate-400 sm:hidden">{s.district}</p></div>
+                              <div>
+                                <p className="font-bold text-slate-700 text-xs">{s.name}</p>
+                                <p className="text-[10px] text-slate-400">{s.district}</p>
+                              </div>
                             </div>
                           </td>
-                          <td className="px-5 py-3 text-slate-500 hidden sm:table-cell">{s.district}</td>
                           <td className="px-5 py-3 text-right">
-                            <button onClick={() => setEditModal({ isOpen: true, station: s })} className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-700 transition-all">
-                              <Edit size={12} /> แก้ไข
+                            <button onClick={() => setEditModal({ isOpen: true, station: s })} className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-all" title="แก้ไข">
+                              <Edit size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* News Table */}
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                  <h3 className="font-bold flex items-center gap-2 text-slate-700"><Megaphone size={16} className="text-purple-500" /> ข่าวประชาสัมพันธ์</h3>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{news.length} รายการ</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50/80 text-[10px] text-slate-400 uppercase font-bold">
+                      <tr>
+                        <th className="px-5 py-3">หัวข้อข่าว / วันที่</th>
+                        <th className="px-5 py-3 text-right">จัดการ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {newsLoading ? (
+                        <tr><td colSpan="2" className="p-10 text-center text-slate-400 text-xs">กำลังโหลด...</td></tr>
+                      ) : news.length === 0 ? (
+                        <tr><td colSpan="2" className="p-10 text-center text-slate-400 text-xs italic">ไม่มีข่าวสาร</td></tr>
+                      ) : news.map(item => (
+                        <tr key={item.id} className="hover:bg-purple-50/30 transition-colors text-xs">
+                          <td className="px-5 py-3">
+                            <p className="font-bold text-slate-700 truncate max-w-[200px]">{item.title}</p>
+                            <p className="text-[9px] text-slate-400 mt-0.5">{item.created_at}</p>
+                          </td>
+                          <td className="px-5 py-3 text-right space-x-1">
+                            <button onClick={() => setNewsFormModal({ isOpen: true, item })} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="แก้ไข">
+                              <Edit size={14} />
+                            </button>
+                            <button onClick={() => deleteNews(item.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all" title="ลบ">
+                              <Trash2 size={14} />
                             </button>
                           </td>
                         </tr>
@@ -572,6 +713,118 @@ export default function App() {
               </button>
               <button onClick={() => setShowLoginModal(false)} className="w-full text-slate-400 hover:text-slate-600 py-1.5 text-sm font-medium transition-colors">ยกเลิก</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEWS DETAIL MODAL */}
+      {newsDetailModal.isOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden my-auto">
+            <div className="relative">
+              {newsDetailModal.item.image_url ? (
+                <img src={newsDetailModal.item.image_url} className="w-full aspect-video object-cover" alt="" />
+              ) : (
+                <div className="w-full h-32 bg-gradient-to-r from-purple-500 to-purple-400" />
+              )}
+              <button onClick={() => setNewsDetailModal({ isOpen: false, item: null })} className="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full backdrop-blur-sm transition-all"><X size={20} /></button>
+            </div>
+            <div className="p-6 md:p-8">
+              <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                <Clock size={12} /> เผยแพร่เมื่อ {newsDetailModal.item.created_at}
+              </p>
+              <h2 className="text-2xl font-black text-slate-800 mb-4 leading-tight">{newsDetailModal.item.title}</h2>
+              <div className="prose prose-sm max-w-none text-slate-600 leading-relaxed space-y-4 mb-6 whitespace-pre-wrap">
+                {newsDetailModal.item.content}
+              </div>
+
+              {newsDetailModal.item.video_url && (
+                <div className="mb-6 rounded-2xl overflow-hidden border border-slate-100 shadow-inner">
+                  <div className="bg-slate-50 p-3 flex items-center gap-2 border-b border-slate-100">
+                    <Video size={16} className="text-red-500" />
+                    <span className="text-xs font-bold text-slate-500">วีดีโอประกอบข่าว</span>
+                  </div>
+                  <div className="aspect-video bg-black flex items-center justify-center">
+                    {newsDetailModal.item.video_url.includes('youtube.com') || newsDetailModal.item.video_url.includes('youtu.be') ? (
+                      <iframe 
+                        className="w-full h-full"
+                        src={newsDetailModal.item.video_url.replace('watch?v=', 'embed/').split('&')[0]} 
+                        title="YouTube video player" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowFullScreen
+                      ></iframe>
+                    ) : (
+                      <a href={newsDetailModal.item.video_url} target="_blank" rel="noopener noreferrer" className="text-white hover:text-purple-300 transition-colors flex flex-col items-center gap-2">
+                        <Video size={40} />
+                        <span className="text-xs font-bold">กดเพื่อรับชมวีดีโอ</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {newsDetailModal.item.reference_url && (
+                <a href={newsDetailModal.item.reference_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-50 text-purple-700 rounded-xl text-xs font-black hover:bg-purple-100 transition-all border border-purple-100">
+                  <ExternalLink size={14} /> อ่านต้นฉบับข่าวสาร
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEWS FORM MODAL */}
+      {newsFormModal.isOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden my-auto">
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="font-black text-slate-700 flex items-center gap-2">
+                {newsFormModal.item ? <Edit size={18} className="text-blue-500" /> : <Plus size={18} className="text-emerald-500" />}
+                {newsFormModal.item ? 'แก้ไขข่าวประชาสัมพันธ์' : 'เพิ่มข่าวประชาสัมพันธ์ใหม่'}
+              </h3>
+              <button onClick={() => setNewsFormModal({ isOpen: false, item: null })} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.target);
+              saveNews({
+                id: newsFormModal.item?.id,
+                title: fd.get('title'),
+                content: fd.get('content'),
+                image_url: fd.get('image_url'),
+                video_url: fd.get('video_url'),
+                reference_url: fd.get('reference_url')
+              });
+            }} className="p-6 space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">หัวข้อข่าว *</label>
+                <input name="title" required defaultValue={newsFormModal.item?.title} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm font-bold" placeholder="เช่น รุ้งข่าว! ปรับลดราคาน้ำมันด่วน..." />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">เนื้อหาข่าวสาร *</label>
+                <textarea name="content" required defaultValue={newsFormModal.item?.content} rows={4} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm leading-relaxed" placeholder="รายละเอียดเนื้อความข่าว..." />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Image size={10} /> URL รูปภาพหน้าปก</label>
+                  <input name="image_url" defaultValue={newsFormModal.item?.image_url} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 text-xs" placeholder="https://..." />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Video size={10} /> URL วีดีโอ (YouTube)</label>
+                  <input name="video_url" defaultValue={newsFormModal.item?.video_url} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 text-xs" placeholder="https://..." />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><ExternalLink size={10} /> URL อ้างอิงแหล่งที่มา</label>
+                <input name="reference_url" defaultValue={newsFormModal.item?.reference_url} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm" placeholder="https://..." />
+              </div>
+              <div className="pt-2">
+                <button type="submit" disabled={isUpdating} className="w-full py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl font-black shadow-lg shadow-purple-200/50 hover:shadow-xl hover:translate-y-[-1px] active:translate-y-0 transition-all flex items-center justify-center gap-2">
+                  {isUpdating ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
+                  {newsFormModal.item ? 'บันทึกการแก้ไข' : 'ลงประกาศข่าวประชาสัมพันธ์'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

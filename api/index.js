@@ -182,4 +182,109 @@ app.post('/api/admin/update', async (req, res) => {
   }
 });
 
+// ========== NEWS ENDPOINTS ==========
+
+async function getOrCreateNewsSheet() {
+  await initDoc();
+  let sheet = doc.sheetsByTitle['news'];
+  if (!sheet) {
+    sheet = await doc.addSheet({
+      title: 'news',
+      headerValues: ['id', 'title', 'content', 'image_url', 'video_url', 'reference_url', 'created_at', 'updated_at']
+    });
+  }
+  return sheet;
+}
+
+// GET /api/news
+app.get('/api/news', async (req, res) => {
+  try {
+    const sheet = await getOrCreateNewsSheet();
+    const rows = await sheet.getRows();
+    const news = rows.map(row => ({
+      id: row.get('id'),
+      title: row.get('title'),
+      content: row.get('content'),
+      image_url: row.get('image_url'),
+      video_url: row.get('video_url'),
+      reference_url: row.get('reference_url'),
+      created_at: row.get('created_at'),
+      updated_at: row.get('updated_at')
+    })).reverse(); // newest first
+    res.json(news);
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    res.status(500).json({ error: 'Failed to fetch news' });
+  }
+});
+
+// POST /api/news (create)
+app.post('/api/news', async (req, res) => {
+  const { title, content, image_url, video_url, reference_url } = req.body;
+  try {
+    const sheet = await getOrCreateNewsSheet();
+    const now = new Date().toLocaleString('th-TH');
+    await sheet.addRow({
+      id: Date.now().toString(),
+      title: title || '',
+      content: content || '',
+      image_url: image_url || '',
+      video_url: video_url || '',
+      reference_url: reference_url || '',
+      created_at: now,
+      updated_at: now
+    });
+    res.json({ status: 'success' });
+  } catch (error) {
+    console.error('Error creating news:', error);
+    res.status(500).json({ error: 'Failed to create news' });
+  }
+});
+
+// POST /api/news/update
+app.post('/api/news/update', async (req, res) => {
+  const { id, title, content, image_url, video_url, reference_url } = req.body;
+  try {
+    const sheet = await getOrCreateNewsSheet();
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.get('id') == id);
+    if (row) {
+      row.assign({
+        title: title || '',
+        content: content || '',
+        image_url: image_url || '',
+        video_url: video_url || '',
+        reference_url: reference_url || '',
+        updated_at: new Date().toLocaleString('th-TH')
+      });
+      await row.save();
+      res.json({ status: 'success' });
+    } else {
+      res.status(404).json({ error: 'News not found' });
+    }
+  } catch (error) {
+    console.error('Error updating news:', error);
+    res.status(500).json({ error: 'Failed to update news' });
+  }
+});
+
+// POST /api/news/delete
+app.post('/api/news/delete', async (req, res) => {
+  const { id } = req.body;
+  try {
+    const sheet = await getOrCreateNewsSheet();
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.get('id') == id);
+    if (row) {
+      await row.delete();
+      res.json({ status: 'success' });
+    } else {
+      res.status(404).json({ error: 'News not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting news:', error);
+    res.status(500).json({ error: 'Failed to delete news' });
+  }
+});
+
 export default app;
