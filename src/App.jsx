@@ -128,6 +128,9 @@ export default function App() {
     fetchNews();
     fetchUserNews();
     fetchConfig();
+    if (siteConfig.announcement_enabled === 'true') {
+      setShowAnnouncement(true);
+    }
     if (window.location.pathname === '/admin') {
       setShowAdminLoginModal(true);
       window.history.replaceState({}, '', '/');
