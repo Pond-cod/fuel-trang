@@ -1300,8 +1300,8 @@ export default function App() {
 
       {/* ADMIN LOGIN MODAL */}
       {showAdminLoginModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowAdminLoginModal(false)}>
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-slate-800 p-5 text-white text-center">
               <Lock size={24} className="mx-auto mb-2 text-purple-400" />
               <p className="font-black">Admin Login</p>
@@ -1319,8 +1319,8 @@ export default function App() {
 
       {/* EDIT MODAL */}
       {editModal.isOpen && editModal.station && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 animate-scale-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setEditModal({ isOpen: false, station: null })}>
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-5">
               <h2 className="font-black text-slate-800">แก้ไขสถานีบริการ</h2>
               <button onClick={() => setEditModal({ isOpen: false, station: null })} className="p-1.5 bg-slate-100 rounded-lg"><X size={16} /></button>
@@ -1357,8 +1357,8 @@ export default function App() {
 
       {/* ANNOUNCEMENT MODAL */}
       {showAnnouncement && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-scale-in">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in" onClick={() => setShowAnnouncement(false)}>
+          <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-br from-purple-600 to-purple-500 p-8 text-white text-center relative overflow-hidden">
               <div className="absolute top-0 right-0 p-6">
                 <button onClick={() => setShowAnnouncement(false)} className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-sm"><X size={20} /></button>
