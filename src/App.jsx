@@ -325,6 +325,55 @@ export default function App() {
     return { ...prev, videoUrls: vurls.length > 0 ? vurls : [''] };
   });
 
+  const renderNewsCard = (item, isAdmin = true) => {
+    let images = [];
+    let videos = [];
+    try { images = JSON.parse(item.image_url); if (!Array.isArray(images)) images = [item.image_url]; }
+    catch(e) { images = item.image_url ? [item.image_url] : []; }
+    try { videos = JSON.parse(item.video_url); if (!Array.isArray(videos)) videos = [item.video_url]; }
+    catch(e) { videos = item.video_url ? [item.video_url] : []; }
+
+    return (
+      <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md hover:border-purple-200 transition-all flex flex-col group animate-fade-in">
+        {images.length > 0 && (
+          <div className="aspect-video w-full overflow-hidden bg-slate-100 relative">
+            <img src={images[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            {images.length > 1 && (
+              <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-2 py-1 rounded-lg flex items-center gap-1">
+                <Image size={10} /> +{images.length - 1}
+              </div>
+            )}
+          </div>
+        )}
+        <div className="p-4 flex-1 flex flex-col">
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex items-center gap-1.5">
+              <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">{item.created_at}</p>
+              {isAdmin ? (
+                <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-[8px] font-black uppercase">Official</span>
+              ) : (
+                <span className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full text-[8px] font-black uppercase">Community</span>
+              )}
+            </div>
+            {videos.length > 0 && <span className="p-1 bg-red-100 text-red-600 rounded-md" title="มีวีดีโอ"><Video size={10} /></span>}
+          </div>
+          <h3 className="font-black text-slate-800 mb-2 line-clamp-2 leading-tight">{item.title}</h3>
+          <p className="text-xs text-slate-500 line-clamp-3 mb-4 leading-relaxed">{item.content}</p>
+          <div className="mt-auto flex justify-between items-center">
+            <button onClick={() => setNewsDetailModal({ isOpen: true, item })} className="text-xs font-black text-purple-600 hover:text-purple-800 flex items-center gap-1 transition-all">
+              อ่านเนื้อหาทั้งหมด <Plus size={14} />
+            </button>
+            {item.reference_url && (
+              <a href={item.reference_url} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-300 hover:text-purple-400 transition-all outline-none">
+                <ExternalLink size={14} />
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const deleteNews = async (id) => {
     if (!confirm('ลบข่าวนี้?')) return;
     try {
@@ -563,7 +612,7 @@ export default function App() {
           )}
 
           {activeView === 'news' && (
-            <div className="p-4 md:p-5 max-w-4xl mx-auto space-y-6">
+            <div className="p-4 md:p-5 max-w-4xl mx-auto space-y-8 pb-20">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-black text-slate-800">ข่าวสาร & ประชาสัมพันธ์</h2>
                 {user && (
@@ -578,63 +627,45 @@ export default function App() {
                   <RefreshCw size={32} className="text-purple-200 animate-spin mb-3" />
                   <p className="text-sm font-bold text-slate-400">กำลังโหลดข่าวสารล่าสุด...</p>
                 </div>
-              ) : [...news, ...userNews].length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
-                  <Megaphone size={32} className="text-slate-100 mb-3" />
-                  <p className="text-sm font-bold text-slate-400 italic">ยังไม่มีข่าวสารในขณะนี้</p>
-                </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[...news.map(n => ({...n, is_admin: true})), ...userNews.map(n => ({...n, is_admin: false}))]
-                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                    .map((item) => {
-                    let images = [];
-                    let videos = [];
-                    try { images = JSON.parse(item.image_url); if (!Array.isArray(images)) images = [item.image_url]; }
-                    catch(e) { images = item.image_url ? [item.image_url] : []; }
-                    try { videos = JSON.parse(item.video_url); if (!Array.isArray(videos)) videos = [item.video_url]; }
-                    catch(e) { videos = item.video_url ? [item.video_url] : []; }
-
-                    return (
-                      <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md hover:border-purple-200 transition-all flex flex-col group">
-                        {images.length > 0 && (
-                          <div className="aspect-video w-full overflow-hidden bg-slate-100 relative">
-                            <img src={images[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            {images.length > 1 && (
-                              <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-2 py-1 rounded-lg flex items-center gap-1">
-                                <Image size={10} /> +{images.length - 1}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        <div className="p-4 flex-1 flex flex-col">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-1.5">
-                              <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">{item.created_at}</p>
-                              {item.is_admin ? (
-                                <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-[8px] font-black uppercase">Admin</span>
-                              ) : (
-                                <span className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full text-[8px] font-black uppercase">Community</span>
-                              )}
-                            </div>
-                            {videos.length > 0 && <span className="p-1 bg-red-100 text-red-600 rounded-md" title="มีวีดีโอ"><Video size={10} /></span>}
-                          </div>
-                          <h3 className="font-black text-slate-800 mb-2 line-clamp-2 leading-tight">{item.title}</h3>
-                          <p className="text-xs text-slate-500 line-clamp-3 mb-4 leading-relaxed">{item.content}</p>
-                          <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
-                            <button onClick={() => setNewsDetailModal({ isOpen: true, item })} className="text-xs font-black text-purple-600 hover:text-purple-800 transition-colors flex items-center gap-1">
-                              อ่านเนื้อหาทั้งหมด <Plus size={12} />
-                            </button>
-                            {item.reference_url && (
-                              <a href={item.reference_url} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-purple-500 transition-colors">
-                                <ExternalLink size={14} />
-                              </a>
-                            )}
-                          </div>
-                        </div>
+                <div className="grid grid-cols-1 gap-10">
+                  {/* OFFICIAL SECTION */}
+                  <section className="space-y-5">
+                    <div className="flex items-center gap-3 border-l-4 border-purple-600 pl-4 py-1">
+                      <div>
+                        <h3 className="text-lg font-black text-slate-800 leading-none">ข่าวสารทางการ</h3>
+                        <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mt-1">Official updates from Admin</p>
                       </div>
-                    );
-                  })}
+                    </div>
+                    {news.length === 0 ? (
+                      <div className="p-10 text-center bg-white/50 rounded-2xl border border-dashed border-slate-200">
+                        <p className="text-xs font-bold text-slate-400 italic">ยังไม่มีข่าวสารทางการในขณะนี้</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {news.map((item) => renderNewsCard(item, true))}
+                      </div>
+                    )}
+                  </section>
+
+                  {/* COMMUNITY SECTION */}
+                  <section className="space-y-5">
+                    <div className="flex items-center gap-3 border-l-4 border-emerald-500 pl-4 py-1">
+                      <div>
+                        <h3 className="text-lg font-black text-slate-800 leading-none">บอกข่าวชุมชนคนตรัง</h3>
+                        <p className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-widest mt-1">Community Announcements</p>
+                      </div>
+                    </div>
+                    {userNews.length === 0 ? (
+                      <div className="p-10 text-center bg-white/50 rounded-2xl border border-dashed border-slate-200">
+                        <p className="text-xs font-bold text-slate-400 italic">ยังไม่มีข่าวจากชุมชนในขณะนี้</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {userNews.map((item) => renderNewsCard(item, false))}
+                      </div>
+                    )}
+                  </section>
                 </div>
               )}
             </div>
