@@ -19,7 +19,9 @@ app.use((req, res, next) => {
   next();
 });
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : null;
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY 
+  ? process.env.GOOGLE_PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n') 
+  : null;
 
 // Initialize Auth
 const serviceAccountAuth = new JWT({

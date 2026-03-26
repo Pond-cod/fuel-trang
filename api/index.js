@@ -12,7 +12,9 @@ app.use(express.json());
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : null;
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY 
+  ? process.env.GOOGLE_PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n') 
+  : null;
 
 // Initialize Auth
 console.log('Initializing JWT with email:', GOOGLE_CLIENT_EMAIL);
