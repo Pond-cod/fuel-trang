@@ -18,6 +18,15 @@ const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY
   ? process.env.GOOGLE_PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n') 
   : '';
 
+const serviceAccountAuth = new JWT({
+  email: GOOGLE_CLIENT_EMAIL,
+  key: GOOGLE_PRIVATE_KEY,
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
+
+const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+const gsheets = google.sheets({ version: 'v4', auth: serviceAccountAuth });
+
 const VOTE_LOG_SHEET = 'votes_log';
 const NEWS_SHEET = 'news';
 const USER_NEWS_SHEET = 'user_news';

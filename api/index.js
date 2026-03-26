@@ -23,6 +23,15 @@ const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY
   ? process.env.GOOGLE_PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n') 
   : null;
 
+const serviceAccountAuth = new JWT({
+  email: GOOGLE_CLIENT_EMAIL,
+  key: GOOGLE_PRIVATE_KEY,
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
+
+const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+const gsheets = google.sheets({ version: 'v4', auth: serviceAccountAuth });
+
 // Shared instance for warm starts
 let cachedDoc = null;
 let lastInit = 0;
