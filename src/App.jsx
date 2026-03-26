@@ -55,6 +55,12 @@ export default function App() {
 
   useEffect(() => {
     fetchData();
+    // Check if URL ends with /admin to show login modal
+    if (window.location.pathname === '/admin') {
+      setShowAdminLoginModal(true);
+      // Clean up URL without refreshing
+      window.history.replaceState({}, '', '/');
+    }
   }, []);
 
   const handleGoogleLogin = async () => {
@@ -297,19 +303,7 @@ export default function App() {
             กระดานนักโหวต
           </button>
 
-          <p className="px-4 pt-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">System</p>
-          <button 
-            onClick={() => {
-              if (isAdminLoggedIn) setActiveView('admin');
-              else setShowAdminLoginModal(true);
-            }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
-              activeView === 'admin' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-            }`}
-          >
-            <Settings size={18} />
-            ระบบจัดการ (Admin)
-          </button>
+          {/* Admin button removed from here and moved to a small icon at the bottom */}
         </div>
 
         <div className="p-4 border-t border-slate-100 bg-slate-50/50 mt-auto">
@@ -353,6 +347,22 @@ export default function App() {
               <Lock size={14} /> ออกจากระบบ Admin
             </button>
           )}
+
+          {/* Subtle Admin Entry (Small Gear) */}
+          <div className="mt-4 flex justify-start px-2">
+            <button 
+              onClick={() => {
+                if (isAdminLoggedIn) setActiveView('admin');
+                else setShowAdminLoginModal(true);
+              }}
+              className={`p-2 rounded-lg transition-all ${
+                activeView === 'admin' ? 'text-blue-600 bg-blue-50' : 'text-slate-300 hover:text-slate-500 hover:bg-slate-100'
+              }`}
+              title="จัดการระบบ"
+            >
+              <Settings size={16} />
+            </button>
+          </div>
         </div>
       </aside>
 
