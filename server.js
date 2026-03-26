@@ -13,6 +13,15 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
 const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
+const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY 
+  ? process.env.GOOGLE_PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n') 
+  : '';
+
+const VOTE_LOG_SHEET = 'votes_log';
+const NEWS_SHEET = 'news';
+const USER_NEWS_SHEET = 'user_news';
+const COMMENTS_SHEET = 'comments';
 // Simple logger
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
