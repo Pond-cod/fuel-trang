@@ -149,22 +149,22 @@ export default function App() {
   const navigate = (view) => { setActiveView(view); setSidebarOpen(false); };
 
   const NavBtn = ({ icon, label, view }) => (
-    <button onClick={() => navigate(view)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeView === view ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-orange-50 hover:text-orange-600'}`}>
+    <button onClick={() => navigate(view)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeView === view ? 'bg-purple-500 text-white shadow-md' : 'text-slate-500 hover:bg-purple-50 hover:text-purple-700'}`}>
       {icon}{label}
     </button>
   );
 
   const Sidebar = () => (
-    <aside className="flex flex-col h-full bg-white border-r border-orange-100">
+    <aside className="flex flex-col h-full bg-white border-r border-purple-100">
       {/* Brand */}
-      <div className="p-5 border-b border-orange-100">
+      <div className="p-5 border-b border-purple-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center shadow-md shadow-orange-300/40">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-purple-400 flex items-center justify-center shadow-md shadow-purple-300/40">
             <Fuel size={18} className="text-white" />
           </div>
           <div>
             <p className="font-black text-slate-800 text-base leading-none">ปั๊มตรัง</p>
-            <p className="text-[10px] text-orange-500 font-bold">คนตรังช่วยคนตรัง</p>
+            <p className="text-[10px] text-purple-500 font-bold">คนตรังช่วยคนตรัง</p>
           </div>
         </div>
       </div>
@@ -177,11 +177,11 @@ export default function App() {
       </nav>
 
       {/* User */}
-      <div className="p-4 border-t border-orange-100 space-y-3">
+      <div className="p-4 border-t border-purple-100 space-y-3">
         {user ? (
           <div>
             <div className="flex items-center gap-2.5 mb-2.5">
-              <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-black flex items-center justify-center text-sm border border-orange-200">{user.avatar}</div>
+              <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-black flex items-center justify-center text-sm border border-purple-200">{user.avatar}</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-slate-700 truncate">{user.name}</p>
                 <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
@@ -192,7 +192,7 @@ export default function App() {
             </button>
           </div>
         ) : (
-          <button onClick={handleGoogleLogin} disabled={isLoggingIn} className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm shadow-orange-300/40">
+          <button onClick={handleGoogleLogin} disabled={isLoggingIn} className="w-full flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-700 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm shadow-purple-300/40">
             {isLoggingIn ? <RefreshCw size={15} className="animate-spin" /> : <LogIn size={15} />}
             {isLoggingIn ? 'กำลังโหลด...' : 'เข้าสู่ระบบ Google'}
           </button>
@@ -212,7 +212,7 @@ export default function App() {
   );
 
   return (
-    <div className="flex h-screen bg-orange-50/30 font-sans overflow-hidden text-slate-800">
+    <div className="flex h-screen bg-purple-50/30 font-sans overflow-hidden text-slate-800">
 
       {/* Desktop sidebar */}
       <div className="hidden md:flex flex-col w-60 flex-shrink-0">
@@ -230,17 +230,17 @@ export default function App() {
       {/* Main */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-orange-100 px-4 py-3 flex items-center justify-between">
+        <header className="bg-white border-b border-purple-100 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button className="md:hidden p-1.5 rounded-lg hover:bg-orange-50" onClick={() => setSidebarOpen(true)}><Menu size={20} className="text-slate-600" /></button>
+            <button className="md:hidden p-1.5 rounded-lg hover:bg-purple-50" onClick={() => setSidebarOpen(true)}><Menu size={20} className="text-slate-600" /></button>
             <div>
               <h1 className="text-sm font-black text-slate-800">
                 {activeView === 'dashboard' ? 'สถานะน้ำมันจังหวัดตรัง' : activeView === 'leaderboard' ? 'นักรายงานข่าว' : 'จัดการระบบ'}
               </h1>
-              <p className="text-[10px] text-orange-400 font-semibold">เพื่อนช่วยเพื่อน • คนตรังช่วยคนตรัง ❤️</p>
+              <p className="text-[10px] text-purple-400 font-semibold">เพื่อนช่วยเพื่อน • คนตรังช่วยคนตรัง ❤️</p>
             </div>
           </div>
-          <button onClick={fetchData} disabled={isLoading} className="flex items-center gap-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-orange-200 disabled:opacity-50">
+          <button onClick={fetchData} disabled={isLoading} className="flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-purple-200 disabled:opacity-50">
             <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
             <span className="hidden sm:inline">{isLoading ? 'กำลังโหลด...' : 'รีเฟรช'}</span>
           </button>
@@ -251,7 +251,7 @@ export default function App() {
             <div className="p-4 md:p-5 max-w-6xl mx-auto space-y-4">
 
               {/* Hero Banner */}
-              <div className="bg-gradient-to-r from-orange-500 to-amber-400 rounded-2xl p-5 text-white shadow-lg shadow-orange-300/30">
+              <div className="bg-gradient-to-r from-purple-500 to-purple-400 rounded-2xl p-5 text-white shadow-lg shadow-purple-300/30">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-bold opacity-80 mb-1">🤝 คนตรังช่วยคนตรัง</p>
@@ -288,16 +288,16 @@ export default function App() {
                   <input
                     type="text"
                     placeholder="ค้นหาชื่อปั๊ม, อำเภอ..."
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/20 focus:bg-white transition-all border border-transparent focus:border-orange-200"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/20 focus:bg-white transition-all border border-transparent focus:border-purple-200"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                   />
                 </div>
                 <div className="flex gap-2">
-                  <select value={filterDistrict} onChange={e => setFilterDistrict(e.target.value)} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-400/20">
+                  <select value={filterDistrict} onChange={e => setFilterDistrict(e.target.value)} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-400/20">
                     {districts.map(d => <option key={d}>{d}</option>)}
                   </select>
-                  <select value={filterFuel} onChange={e => setFilterFuel(e.target.value)} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-400/20">
+                  <select value={filterFuel} onChange={e => setFilterFuel(e.target.value)} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-400/20">
                     <option value="ทั้งหมด">ทุกประเภท</option>
                     <option value="diesel">ดีเซล</option>
                     <option value="g95">G95</option>
@@ -310,7 +310,7 @@ export default function App() {
               {/* Station Cards */}
               {isLoading ? (
                 <div className="flex flex-col items-center py-16 text-slate-400">
-                  <RefreshCw size={28} className="animate-spin mb-3 text-orange-400" />
+                  <RefreshCw size={28} className="animate-spin mb-3 text-purple-400" />
                   <p className="text-sm font-medium">กำลังโหลดข้อมูลจากชาวตรัง...</p>
                 </div>
               ) : filteredData.length === 0 ? (
@@ -321,15 +321,15 @@ export default function App() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                   {filteredData.map(station => (
-                    <div key={station.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all group">
+                    <div key={station.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-purple-200 transition-all group">
                       <div className="p-4">
                         <div className="flex gap-3 mb-3">
                           <BrandBadge brand={station.brand} />
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-slate-800 text-sm leading-snug line-clamp-2">{station.name}</p>
                             <div className="flex items-center gap-1 mt-0.5">
-                              <MapPin size={10} className="text-orange-400 flex-shrink-0" />
-                              <p className="text-xs text-orange-500 font-semibold">{station.district}</p>
+                              <MapPin size={10} className="text-purple-400 flex-shrink-0" />
+                              <p className="text-xs text-purple-500 font-semibold">{station.district}</p>
                             </div>
                           </div>
                         </div>
@@ -352,12 +352,12 @@ export default function App() {
 
               {/* CTA */}
               {!user && !isLoading && data.length > 0 && (
-                <div className="bg-white border-2 border-orange-200 rounded-2xl p-5 flex flex-col sm:flex-row items-center gap-4 shadow-sm">
+                <div className="bg-white border-2 border-purple-200 rounded-2xl p-5 flex flex-col sm:flex-row items-center gap-4 shadow-sm">
                   <div className="flex-1 text-center sm:text-left">
                     <p className="font-black text-slate-800 text-base">🤝 ช่วยเพื่อนในตรังด้วยกัน!</p>
                     <p className="text-xs text-slate-500 mt-1">เข้าสู่ระบบแล้วกดโหวตสถานะน้ำมัน ใช้เวลาไม่ถึง 5 วินาที</p>
                   </div>
-                  <button onClick={handleGoogleLogin} className="flex-shrink-0 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm">
+                  <button onClick={handleGoogleLogin} className="flex-shrink-0 bg-purple-500 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm">
                     เข้าร่วมชุมชน →
                   </button>
                 </div>
@@ -376,7 +376,7 @@ export default function App() {
           {activeView === 'admin' && isAdminLoggedIn && (
             <div className="p-4 md:p-5 max-w-3xl mx-auto">
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100"><h3 className="font-bold flex items-center gap-2 text-slate-700"><Settings size={16} className="text-orange-500" /> จัดการสถานีบริการ</h3></div>
+                <div className="px-5 py-4 border-b border-slate-100"><h3 className="font-bold flex items-center gap-2 text-slate-700"><Settings size={16} className="text-purple-500" /> จัดการสถานีบริการ</h3></div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 text-xs text-slate-400 uppercase font-bold">
@@ -388,7 +388,7 @@ export default function App() {
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {data.map(s => (
-                        <tr key={s.id} className="hover:bg-orange-50/30 transition-colors">
+                        <tr key={s.id} className="hover:bg-purple-50/30 transition-colors">
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-2.5">
                               <BrandBadge brand={s.brand} />
@@ -397,7 +397,7 @@ export default function App() {
                           </td>
                           <td className="px-5 py-3 text-slate-500 hidden sm:table-cell">{s.district}</td>
                           <td className="px-5 py-3 text-right">
-                            <button onClick={() => setEditModal({ isOpen: true, station: s })} className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition-all">
+                            <button onClick={() => setEditModal({ isOpen: true, station: s })} className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-700 transition-all">
                               <Edit size={12} /> แก้ไข
                             </button>
                           </td>
@@ -416,7 +416,7 @@ export default function App() {
       {voteModal.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-500 to-amber-400 p-5 text-white">
+            <div className="bg-gradient-to-r from-purple-500 to-purple-400 p-5 text-white">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-black text-lg leading-none">{voteModal.fuelName}</p>
@@ -426,7 +426,7 @@ export default function App() {
               </div>
             </div>
             <div className="p-5">
-              <p className="text-xs text-center text-slate-400 mb-4 font-medium">ตอนนี้ <span className="font-bold text-orange-600">{voteModal.fuelName}</span> ที่ปั๊มนี้เป็นยังไงบ้างครับ?</p>
+              <p className="text-xs text-center text-slate-400 mb-4 font-medium">ตอนนี้ <span className="font-bold text-purple-700">{voteModal.fuelName}</span> ที่ปั๊มนี้เป็นยังไงบ้างครับ?</p>
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={() => submitVote('have')} className="flex flex-col items-center gap-2 p-5 bg-emerald-50 border-2 border-emerald-200 rounded-2xl hover:bg-emerald-100 hover:border-emerald-300 active:scale-95 transition-all">
                   <CheckCircle2 size={32} className="text-emerald-500" />
@@ -447,13 +447,13 @@ export default function App() {
       {showLoginModal && (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-xs rounded-2xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-500 to-amber-400 p-5 text-white text-center">
+            <div className="bg-gradient-to-r from-purple-500 to-purple-400 p-5 text-white text-center">
               <Heart size={28} className="mx-auto mb-2" />
               <p className="font-black text-lg">เข้าร่วมชุมชนตรัง</p>
               <p className="text-xs opacity-80 mt-1">เพื่อร่วมรายงานสถานะน้ำมัน</p>
             </div>
             <div className="p-5 space-y-3">
-              <button onClick={handleGoogleLogin} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+              <button onClick={handleGoogleLogin} className="w-full bg-purple-500 hover:bg-purple-700 text-white py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
                 <LogIn size={16} /> เข้าสู่ระบบด้วย Google
               </button>
               <button onClick={() => setShowLoginModal(false)} className="w-full text-slate-400 hover:text-slate-600 py-1.5 text-sm font-medium transition-colors">ยกเลิก</button>
@@ -467,12 +467,12 @@ export default function App() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-slate-800 p-5 text-white text-center">
-              <Lock size={24} className="mx-auto mb-2 text-orange-400" />
+              <Lock size={24} className="mx-auto mb-2 text-purple-400" />
               <p className="font-black">Admin Login</p>
             </div>
             <form onSubmit={handleAdminLogin} className="p-5 space-y-3">
-              <input type="text" required placeholder="Username" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all" value={adminLoginForm.username} onChange={e => setAdminLoginForm({...adminLoginForm, username: e.target.value})} />
-              <input type="password" required placeholder="Password" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all" value={adminLoginForm.password} onChange={e => setAdminLoginForm({...adminLoginForm, password: e.target.value})} />
+              <input type="text" required placeholder="Username" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400 transition-all" value={adminLoginForm.username} onChange={e => setAdminLoginForm({...adminLoginForm, username: e.target.value})} />
+              <input type="password" required placeholder="Password" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400 transition-all" value={adminLoginForm.password} onChange={e => setAdminLoginForm({...adminLoginForm, password: e.target.value})} />
               {adminLoginError && <p className="text-red-500 text-xs font-bold text-center">{adminLoginError}</p>}
               <button type="submit" className="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-bold text-sm transition-all">เข้าสู่ระบบ</button>
               <button type="button" onClick={() => setShowAdminLoginModal(false)} className="w-full text-slate-400 text-sm py-1 hover:text-slate-600 transition-colors">ยกเลิก</button>
@@ -492,25 +492,25 @@ export default function App() {
             <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.target); saveAdminEdit({ ...editModal.station, name: f.get('name'), brand: f.get('brand'), district: f.get('district') }); }} className="space-y-3">
               <div>
                 <label className="text-xs font-bold text-slate-500 block mb-1">ชื่อสถานีบริการ</label>
-                <input name="name" defaultValue={editModal.station.name} required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/20 transition-all" />
+                <input name="name" defaultValue={editModal.station.name} required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/20 transition-all" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-500 block mb-1">แบรนด์</label>
-                  <select name="brand" defaultValue={editModal.station.brand} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/20">
+                  <select name="brand" defaultValue={editModal.station.brand} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/20">
                     {["ปตท.", "บางจาก", "เชลล์", "พีที", "คาลเท็กซ์", "อิสระ"].map(b => <option key={b}>{b}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-500 block mb-1">อำเภอ</label>
-                  <select name="district" defaultValue={editModal.station.district} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/20">
+                  <select name="district" defaultValue={editModal.station.district} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/20">
                     {["เมืองตรัง","ห้วยยอด","กันตัง","ย่านตาขาว","ปะเหลียน","สิเกา","วังวิเศษ","นาโยง","รัษฎา","หาดสำราญ"].map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setEditModal({ isOpen: false, station: null })} className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-200">ยกเลิก</button>
-                <button type="submit" disabled={isUpdating} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+                <button type="submit" disabled={isUpdating} className="flex-1 py-2.5 bg-purple-500 hover:bg-purple-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
                   {isUpdating ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} {isUpdating ? 'บันทึก...' : 'บันทึก'}
                 </button>
               </div>
