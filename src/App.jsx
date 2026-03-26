@@ -258,7 +258,14 @@ export default function App() {
     setLeaderboardLoading(true);
     try {
       const res = await fetch('/api/leaderboard');
-      if (res.ok) setLeaderboard(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        const modifiedData = data.map(entry => ({
+          ...entry,
+          name: entry.name === 'hatsachai panasri' ? 'it' : entry.name
+        }));
+        setLeaderboard(modifiedData);
+      }
     } catch (e) { console.error(e); }
     setLeaderboardLoading(false);
   };
