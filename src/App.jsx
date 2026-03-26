@@ -39,8 +39,17 @@ export default function App() {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsDetailModal, setNewsDetailModal] = useState({ isOpen: false, item: null });
   const [newsFormModal, setNewsFormModal] = useState({ isOpen: false, item: null, imageUrls: [''], videoUrls: [''], type: 'admin' });
-  const [siteConfig, setSiteConfig] = useState({ announcement_enabled: 'false', announcement_title: '', announcement_content: '' });
-  const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [siteConfig, setSiteConfig] = useState(() => {
+    const cached = localStorage.getItem('fuel_radar_config');
+    return cached ? JSON.parse(cached) : { announcement_enabled: 'true', announcement_title: 'กำลังโหลด...', announcement_content: 'เพื่อนช่วยเพื่อน คนตรังช่วยคนตรัง 💜' };
+  });
+  const [showAnnouncement, setShowAnnouncement] = useState(() => {
+    const cached = localStorage.getItem('fuel_radar_config');
+    if (cached) {
+      return JSON.parse(cached).announcement_enabled === 'true';
+    }
+    return true; // Optimistic show for first encounter
+  });
   const logoutTimerRef = useRef(null);
 
   const doLogout = () => {
@@ -104,8 +113,13 @@ export default function App() {
       const response = await fetch('/api/config');
       if (response.ok) {
         const config = await response.json();
-        setSiteConfig(prev => ({ ...prev, ...config }));
+        const merged = { ...siteConfig, ...config };
+        setSiteConfig(merged);
+        localStorage.setItem('fuel_radar_config', JSON.stringify(merged));
+        
+        // Final sync of visibility
         if (config.announcement_enabled === 'true') setShowAnnouncement(true);
+        else setShowAnnouncement(false);
       }
     } catch (e) { console.error('Config error:', e); }
   };

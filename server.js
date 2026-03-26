@@ -23,24 +23,19 @@ const NEWS_SHEET = 'news';
 const USER_NEWS_SHEET = 'user_news';
 const COMMENTS_SHEET = 'comments';
 const CONFIG_SHEET = 'config';
-// Simple logger
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
 
-// Initialize Auth
-const serviceAccountAuth = new JWT({
-  email: GOOGLE_CLIENT_EMAIL,
-  key: GOOGLE_PRIVATE_KEY,
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-});
-
-const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
-const gsheets = google.sheets({ version: 'v4', auth: serviceAccountAuth });
+// Shared Document instance for caching
+let cachedDoc = null;
+let lastInit = 0;
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 async function initDoc() {
   try {
+    const now = Date.now();
+    if (cachedDoc && (now - lastInit < CACHE_TTL)) {
+      return cachedDoc;
+    }
+
     await doc.loadInfo();
     console.log('Doc loaded successfully:', doc.title);
 
@@ -90,6 +85,10 @@ async function initDoc() {
       console.log(`Adding ${toAdd.length} missing config keys...`);
       await configSheet.addRows(toAdd);
     }
+
+    cachedDoc = doc;
+    lastInit = now;
+    return doc;
   } catch (err) {
     console.error('Failed to load doc info or create sheets:', err.message);
     throw err;

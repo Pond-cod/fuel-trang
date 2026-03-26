@@ -17,25 +17,18 @@ const USER_NEWS_SHEET = 'user_news';
 const COMMENTS_SHEET = 'comments';
 const CONFIG_SHEET = 'config';
 
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
-const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY 
-  ? process.env.GOOGLE_PRIVATE_KEY.replace(/^"|"$/g, '').replace(/\\n/g, '\n') 
-  : null;
-
-// Initialize Auth
-console.log('Initializing JWT with email:', GOOGLE_CLIENT_EMAIL);
-const serviceAccountAuth = new JWT({
-  email: GOOGLE_CLIENT_EMAIL,
-  key: GOOGLE_PRIVATE_KEY,
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-});
-
-const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
-const gsheets = google.sheets({ version: 'v4', auth: serviceAccountAuth }); // Initialize gsheets
+// Shared instance for warm starts
+let cachedDoc = null;
+let lastInit = 0;
+const CACHE_TTL = 15 * 60 * 1000;
 
 async function initDoc() {
   try {
+    const now = Date.now();
+    if (cachedDoc && (now - lastInit < CACHE_TTL)) {
+      return cachedDoc;
+    }
+
     console.log('Loading doc info for ID:', SPREADSHEET_ID);
     await doc.loadInfo();
     console.log('Doc loaded successfully:', doc.title);
@@ -87,6 +80,9 @@ async function initDoc() {
       await configSheet.addRows(toAdd);
     }
 
+    cachedDoc = doc;
+    lastInit = now;
+    return doc;
   } catch (err) {
     console.error('CRITICAL: initDoc failed:', err.message || err);
     throw new Error(`Initialization Error: ${err.message || 'Unknown error'}`);
