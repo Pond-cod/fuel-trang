@@ -126,8 +126,8 @@ export default function App() {
     setData(prev => prev.map(station => {
       if (station.id === voteModal.stationId) {
         const current = station.fuels[voteModal.fuelKey];
-        return {
           ...station,
+          lastUpdated: new Date().toLocaleString('th-TH'),
           fuels: {
             ...station.fuels,
             [voteModal.fuelKey]: {
