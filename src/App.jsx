@@ -453,12 +453,24 @@ export default function App() {
         <NavBtn icon={<Fuel size={17} />} label="ภาพรวมน้ำมัน" view="dashboard" />
         <NavBtn icon={<Megaphone size={17} />} label="ประชาสัมพันธ์" view="news" />
         <NavBtn icon={<Users size={17} />} label="นักรายงานข่าว" view="leaderboard" />
-        <button 
-          onClick={() => { setShowAnnouncement(true); setSidebarOpen(false); }}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-purple-50 hover:text-purple-700 transition-all"
-        >
-          <Info size={17} className="text-purple-400" /> คู่มือการทำงาน
-        </button>
+        {siteConfig.announcement_link ? (
+          <a 
+            href={siteConfig.announcement_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setSidebarOpen(false)}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-purple-50 hover:text-purple-700 transition-all"
+          >
+            <Info size={17} className="text-purple-400" /> คู่มือการทำงาน
+          </a>
+        ) : (
+          <button 
+            onClick={() => { setShowAnnouncement(true); setSidebarOpen(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-purple-50 hover:text-purple-700 transition-all"
+          >
+            <Info size={17} className="text-purple-400" /> คู่มือการทำงาน
+          </button>
+        )}
         {isAdminLoggedIn && <NavBtn icon={<Settings size={17} />} label="จัดการระบบ" view="admin" />}
       </nav>
 
