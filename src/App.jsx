@@ -102,13 +102,13 @@ export default function App() {
   }), [data, searchTerm, filterDistrict, filterFuel]);
 
   const getFuelStatus = (fuelData) => {
-    if (!fuelData) return { level: 'none', text: '—' };
+    if (!fuelData) return { level: 'none', text: '—', percent: 0 };
     const total = fuelData.have + fuelData.out;
-    if (total === 0) return { level: 'none', text: '—' };
+    if (total === 0) return { level: 'none', text: '—', percent: 0 };
     const pct = Math.round(fuelData.have / total * 100);
-    if (pct >= 60) return { level: 'high', text: 'มีอยู่' };
-    if (pct >= 30) return { level: 'mid', text: 'มีบ้าง' };
-    return { level: 'low', text: 'ใกล้หมด' };
+    if (pct >= 60) return { level: 'high', text: 'มี', percent: pct };
+    if (pct >= 30) return { level: 'mid', text: 'มีบ้าง', percent: pct };
+    return { level: 'low', text: 'หมด', percent: pct };
   };
 
   const stats = useMemo(() => ({
@@ -141,7 +141,7 @@ export default function App() {
       >
         <span className={`w-1.5 h-1.5 rounded-full ${dot}`}></span>
         {FUEL_NAMES[fuelKey]}
-        {st.level !== 'none' && <span className="ml-0.5">{st.text}</span>}
+        {st.level !== 'none' && <span className="ml-0.5">{st.percent}% {st.text}</span>}
       </button>
     );
   };
