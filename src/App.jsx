@@ -3,7 +3,7 @@ import {
   Search, MapPin, RefreshCw, Droplet, Fuel, 
   X, Clock, CheckCircle2, XCircle,
   LogOut, LogIn, Edit, Settings, Save, Lock, Heart,
-  Menu, Users, Star, Megaphone, Trash2, Plus, ExternalLink, Image, Video
+  Menu, Users, Star, Megaphone, Trash2, Plus, ExternalLink, Image, Video, MessageSquare, User
 } from 'lucide-react';
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
@@ -34,9 +34,11 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [news, setNews] = useState([]);
+  const [userNews, setUserNews] = useState([]);
+  const [comments, setComments] = useState([]);
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsDetailModal, setNewsDetailModal] = useState({ isOpen: false, item: null });
-  const [newsFormModal, setNewsFormModal] = useState({ isOpen: false, item: null, imageUrls: [''], videoUrls: [''] });
+  const [newsFormModal, setNewsFormModal] = useState({ isOpen: false, item: null, imageUrls: [''], videoUrls: [''], type: 'admin' });
   const logoutTimerRef = useRef(null);
 
   const doLogout = () => {
@@ -99,6 +101,8 @@ export default function App() {
 
   useEffect(() => {
     fetchData();
+    fetchNews();
+    fetchUserNews();
     if (window.location.pathname === '/admin') {
       setShowAdminLoginModal(true);
       window.history.replaceState({}, '', '/');
@@ -225,30 +229,61 @@ export default function App() {
 
   const fetchNews = async () => {
     setNewsLoading(true);
-    try {
-      const res = await fetch('/api/news');
-      if (res.ok) setNews(await res.json());
-    } catch (e) { console.error(e); }
+    try { const res = await fetch('/api/news'); const d = await res.json(); setNews(d); } catch (e) { console.error(e); }
     setNewsLoading(false);
   };
+
+  const fetchUserNews = async () => {
+    try { const res = await fetch('/api/user-news'); const d = await res.json(); setUserNews(d); } catch (e) { console.error(e); }
+  };
+
+  const fetchComments = async (newsId) => {
+    try { 
+      const res = await fetch(`/api/comments/${newsId}`); 
+      const d = await res.json(); 
+      setComments(d); 
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    if (newsDetailModal.isOpen && newsDetailModal.item) {
+      fetchComments(newsDetailModal.item.id);
+    }
+  }, [newsDetailModal.isOpen, newsDetailModal.item]);
 
   const saveNews = async (form) => {
     setIsUpdating(true);
     try {
-      const url = form.id ? '/api/news/update' : '/api/news';
+      const isUser = newsFormModal.type === 'user';
+      const url = isUser ? '/api/user-news' : (form.id ? '/api/news/update' : '/api/news');
       // Store images and videos as JSON string
       const payload = { 
         ...form, 
+        user_name: user?.name,
+        user_email: user?.email,
         image_url: JSON.stringify(newsFormModal.imageUrls.filter(u => u.trim() !== '')),
         video_url: JSON.stringify(newsFormModal.videoUrls.filter(u => u.trim() !== ''))
       };
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (res.ok) { setNewsFormModal({ isOpen: false, item: null, imageUrls: [''], videoUrls: [''] }); fetchNews(); }
+      if (res.ok) { 
+        setNewsFormModal({ isOpen: false, item: null, imageUrls: [''], videoUrls: [''], type: 'admin' }); 
+        fetchNews();
+        fetchUserNews();
+      }
     } catch (e) { console.error(e); }
     setIsUpdating(false);
   };
 
-  const openNewsForm = (item = null) => {
+  const submitComment = async (newsId, content) => {
+    if (!user || !content.trim()) return;
+    try {
+      const payload = { news_id: newsId, user_name: user.name, user_email: user.email, avatar: user.avatar, content };
+      const res = await fetch('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (res.ok) fetchComments(newsId);
+    } catch (e) { console.error(e); }
+  };
+
+  const openNewsForm = (item = null, type = 'admin') => {
     let urls = [''];
     let vurls = [''];
     if (item) {
@@ -265,7 +300,7 @@ export default function App() {
         } catch (e) { vurls = [item.video_url]; }
       }
     }
-    setNewsFormModal({ isOpen: true, item, imageUrls: urls, videoUrls: vurls });
+    setNewsFormModal({ isOpen: true, item, imageUrls: urls, videoUrls: vurls, type });
   };
 
   const addImageField = () => setNewsFormModal(prev => ({ ...prev, imageUrls: [...prev.imageUrls, ''] }));
@@ -293,8 +328,9 @@ export default function App() {
   const deleteNews = async (id) => {
     if (!confirm('ลบข่าวนี้?')) return;
     try {
-      const res = await fetch('/api/news/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-      if (res.ok) fetchNews();
+      await fetch(`/api/news/${id}`, { method: 'DELETE' });
+      fetchNews();
+      fetchUserNews();
     } catch (e) { console.error(e); }
   };
 
@@ -527,27 +563,31 @@ export default function App() {
           )}
 
           {activeView === 'news' && (
-            <div className="p-4 md:p-5 max-w-4xl mx-auto space-y-4">
-              <div className="bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl p-5 text-white shadow-lg shadow-purple-300/30 text-center">
-                <p className="text-4xl mb-2">📢</p>
-                <h2 className="text-xl font-black">ประชาสัมพันธ์ชาวตรัง</h2>
-                <p className="text-xs opacity-80 mt-1">อัปเดตราคาน้ำมันและข่าวสารสำคัญเพื่อคนตรัง</p>
+            <div className="p-4 md:p-5 max-w-4xl mx-auto space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-black text-slate-800">ข่าวสาร & ประชาสัมพันธ์</h2>
+                {user && (
+                  <button onClick={() => openNewsForm(null, 'user')} className="bg-purple-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md hover:bg-purple-700 transition-all flex items-center gap-1.5">
+                    <Plus size={14} /> บอกข่าวชุมชน
+                  </button>
+                )}
               </div>
 
               {newsLoading ? (
-                <div className="flex flex-col items-center py-12 text-slate-400">
-                  <RefreshCw size={24} className="animate-spin mb-3 text-purple-400" />
-                  <p className="text-sm">กำลังโหลดข่าวสาร...</p>
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
+                  <RefreshCw size={32} className="text-purple-200 animate-spin mb-3" />
+                  <p className="text-sm font-bold text-slate-400">กำลังโหลดข่าวสารล่าสุด...</p>
                 </div>
-              ) : news.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center shadow-sm">
-                  <p className="text-5xl mb-3">🗞️</p>
-                  <p className="font-bold text-slate-500">ยังไม่มีข่าวสารในขณะนี้</p>
-                  <p className="text-xs text-slate-400 mt-1">ติดตามข่าวสารใหม่ๆ ได้ที่นี่เร็วๆ นี้</p>
+              ) : [...news, ...userNews].length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
+                  <Megaphone size={32} className="text-slate-100 mb-3" />
+                  <p className="text-sm font-bold text-slate-400 italic">ยังไม่มีข่าวสารในขณะนี้</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {news.map((item) => {
+                  {[...news.map(n => ({...n, is_admin: true})), ...userNews.map(n => ({...n, is_admin: false}))]
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .map((item) => {
                     let images = [];
                     let videos = [];
                     try { images = JSON.parse(item.image_url); if (!Array.isArray(images)) images = [item.image_url]; }
@@ -569,7 +609,14 @@ export default function App() {
                         )}
                         <div className="p-4 flex-1 flex flex-col">
                           <div className="flex justify-between items-start mb-2">
-                            <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">{item.created_at}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">{item.created_at}</p>
+                              {item.is_admin ? (
+                                <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-[8px] font-black uppercase">Admin</span>
+                              ) : (
+                                <span className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full text-[8px] font-black uppercase">Community</span>
+                              )}
+                            </div>
                             {videos.length > 0 && <span className="p-1 bg-red-100 text-red-600 rounded-md" title="มีวีดีโอ"><Video size={10} /></span>}
                           </div>
                           <h3 className="font-black text-slate-800 mb-2 line-clamp-2 leading-tight">{item.title}</h3>
@@ -633,6 +680,91 @@ export default function App() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {activeView === 'user-dashboard' && user && (
+            <div className="p-4 md:p-5 max-w-4xl mx-auto space-y-6">
+              {/* Profile Card */}
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-600 to-purple-400 p-8 text-white relative overflow-hidden">
+                  <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+                  <div className="relative flex flex-col items-center">
+                    <div className="w-20 h-20 rounded-full bg-white text-purple-600 flex items-center justify-center text-3xl font-black shadow-xl mb-4">
+                      {user.avatar}
+                    </div>
+                    <h2 className="text-xl font-black">{user.name}</h2>
+                    <p className="text-xs opacity-75">{user.email}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 divide-x divide-slate-50 border-t border-slate-50">
+                  <div className="p-6 text-center">
+                    <p className="text-2xl font-black text-purple-600">
+                      {leaderboard.find(l => l.email === user.email)?.voteCount || 0}
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">การรายงานทั้งหมด</p>
+                  </div>
+                  <div className="p-6 text-center">
+                    <p className="text-2xl font-black text-slate-700">
+                      {(() => {
+                        const rank = leaderboard.findIndex(l => l.email === user.email);
+                        return rank === -1 ? '-' : `#${rank + 1}`;
+                      })()}
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">อันดับร่วมชุมชน</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* My Community Posts */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-black text-slate-800 flex items-center gap-2">
+                    <Megaphone size={18} className="text-purple-500" /> 
+                    ข่าวที่คุณบอกชุมชน ({userNews.filter(n => n.user_email === user.email).length})
+                  </h3>
+                  <button onClick={() => openNewsForm(null, 'user')} className="text-xs font-black text-purple-600 flex items-center gap-1 hover:bg-purple-50 px-3 py-1.5 rounded-xl transition-all">
+                    <Plus size={14} /> เขียนโพสต์ใหม่
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {userNews.filter(n => n.user_email === user.email).length === 0 ? (
+                    <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
+                      <p className="text-4xl mb-3">🗞️</p>
+                      <p className="text-sm font-bold text-slate-400 italic">คุณยังไม่เคยบอกข่าวเลย ลองเขียนข่าวแรกดูสิ!</p>
+                    </div>
+                  ) : (
+                    userNews.filter(n => n.user_email === user.email).map((item) => {
+                      let images = [];
+                      try { images = JSON.parse(item.image_url); if (!Array.isArray(images)) images = [item.image_url]; }
+                      catch(e) { images = item.image_url ? [item.image_url] : []; }
+
+                      return (
+                        <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-all flex flex-col group relative">
+                          {images.length > 0 && (
+                            <div className="aspect-video w-full overflow-hidden bg-slate-100">
+                              <img src={images[0]} alt={item.title} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="p-4 flex-1 flex flex-col">
+                            <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider mb-2">{item.created_at}</p>
+                            <h3 className="font-black text-slate-800 mb-2 line-clamp-1">{item.title}</h3>
+                            <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
+                              <button onClick={() => setNewsDetailModal({ isOpen: true, item })} className="text-xs font-black text-purple-600 flex items-center gap-1">
+                                ดูโพสต์ <Plus size={12} />
+                              </button>
+                              <button onClick={() => deleteNews(item.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -855,6 +987,68 @@ export default function App() {
                   <ExternalLink size={14} /> อ่านต้นฉบับข่าวสาร
                 </a>
               )}
+
+              {/* COMMENTS SECTION */}
+              <div className="mt-10 pt-8 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-black text-slate-800 flex items-center gap-2">
+                    <MessageSquare size={18} className="text-purple-500" /> 
+                    ความคิดเห็น ({comments.length})
+                  </h3>
+                  {!user && <p className="text-[10px] font-bold text-slate-400">เข้าสู่ระบบเพื่อแสดงความเห็น</p>}
+                </div>
+
+                {user && (
+                  <div className="mb-8 flex gap-3">
+                    <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center font-black text-purple-600 flex-shrink-0">
+                      {user.avatar}
+                    </div>
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const content = e.target.comment.value;
+                        if (content.trim()) {
+                          submitComment(newsDetailModal.item.id, content);
+                          e.target.reset();
+                        }
+                      }}
+                      className="flex-1 flex gap-2"
+                    >
+                      <input 
+                        name="comment"
+                        placeholder="เขียนความคิดเห็นของคุณ..."
+                        className="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm"
+                      />
+                      <button type="submit" className="bg-purple-600 text-white p-2.5 rounded-xl hover:bg-purple-700 transition-all shadow-md">
+                        <Save size={18} />
+                      </button>
+                    </form>
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  {comments.length === 0 ? (
+                    <div className="py-10 text-center border border-dashed border-slate-100 rounded-2xl">
+                      <p className="text-sm font-bold text-slate-300 italic">ยังไม่มีความคิดเห็นในขณะนี้</p>
+                    </div>
+                  ) : (
+                    comments.map((c, i) => (
+                      <div key={i} className="flex gap-3 animate-fade-in">
+                        <div className="w-9 h-9 rounded-full bg-purple-50 flex items-center justify-center font-black text-purple-400 text-xs flex-shrink-0">
+                          {c.avatar || '?'}
+                        </div>
+                        <div className="flex-1 bg-slate-50/50 p-4 rounded-2xl border border-slate-100/50">
+                          <div className="flex justify-between items-center mb-1">
+                            <p className="font-black text-slate-700 text-xs">{c.user_name}</p>
+                            <p className="text-[9px] font-bold text-slate-400">{c.created_at}</p>
+                          </div>
+                          <p className="text-sm text-slate-600 leading-relaxed">{c.content}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
