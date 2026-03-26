@@ -36,7 +36,7 @@ export default function App() {
   const [news, setNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsDetailModal, setNewsDetailModal] = useState({ isOpen: false, item: null });
-  const [newsFormModal, setNewsFormModal] = useState({ isOpen: false, item: null });
+  const [newsFormModal, setNewsFormModal] = useState({ isOpen: false, item: null, imageUrls: [''] });
   const logoutTimerRef = useRef(null);
 
   const doLogout = () => {
@@ -236,11 +236,37 @@ export default function App() {
     setIsUpdating(true);
     try {
       const url = form.id ? '/api/news/update' : '/api/news';
-      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-      if (res.ok) { setNewsFormModal({ isOpen: false, item: null }); fetchNews(); }
+      // Store images as JSON string
+      const payload = { ...form, image_url: JSON.stringify(newsFormModal.imageUrls.filter(u => u.trim() !== '')) };
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (res.ok) { setNewsFormModal({ isOpen: false, item: null, imageUrls: [''] }); fetchNews(); }
     } catch (e) { console.error(e); }
     setIsUpdating(false);
   };
+
+  const openNewsForm = (item = null) => {
+    let urls = [''];
+    if (item && item.image_url) {
+      try {
+        const parsed = JSON.parse(item.image_url);
+        urls = Array.isArray(parsed) ? (parsed.length > 0 ? parsed : ['']) : [item.image_url];
+      } catch (e) {
+        urls = [item.image_url];
+      }
+    }
+    setNewsFormModal({ isOpen: true, item, imageUrls: urls });
+  };
+
+  const addImageField = () => setNewsFormModal(prev => ({ ...prev, imageUrls: [...prev.imageUrls, ''] }));
+  const updateImageField = (index, val) => setNewsFormModal(prev => {
+    const urls = [...prev.imageUrls];
+    urls[index] = val;
+    return { ...prev, imageUrls: urls };
+  });
+  const removeImageField = (index) => setNewsFormModal(prev => {
+    const urls = prev.imageUrls.filter((_, i) => i !== index);
+    return { ...prev, imageUrls: urls.length > 0 ? urls : [''] };
+  });
 
   const deleteNews = async (id) => {
     if (!confirm('ลบข่าวนี้?')) return;
@@ -499,33 +525,44 @@ export default function App() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {news.map((item) => (
-                    <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md hover:border-purple-200 transition-all flex flex-col group">
-                      {item.image_url && (
-                        <div className="aspect-video w-full overflow-hidden bg-slate-100">
-                          <img src={item.image_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        </div>
-                      )}
-                      <div className="p-4 flex-1 flex flex-col">
-                        <div className="flex justify-between items-start mb-2">
-                          <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">{item.created_at}</p>
-                          {item.video_url && <span className="p-1 bg-red-100 text-red-600 rounded-md" title="มีวีดีโอ"><Video size={10} /></span>}
-                        </div>
-                        <h3 className="font-black text-slate-800 mb-2 line-clamp-2 leading-tight">{item.title}</h3>
-                        <p className="text-xs text-slate-500 line-clamp-3 mb-4 leading-relaxed">{item.content}</p>
-                        <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
-                          <button onClick={() => setNewsDetailModal({ isOpen: true, item })} className="text-xs font-black text-purple-600 hover:text-purple-800 transition-colors flex items-center gap-1">
-                            อ่านเนื้อหาทั้งหมด <Plus size={12} />
-                          </button>
-                          {item.reference_url && (
-                            <a href={item.reference_url} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-purple-500 transition-colors">
-                              <ExternalLink size={14} />
-                            </a>
-                          )}
+                  {news.map((item) => {
+                    let images = [];
+                    try { images = JSON.parse(item.image_url); if (!Array.isArray(images)) images = [item.image_url]; }
+                    catch(e) { images = item.image_url ? [item.image_url] : []; }
+
+                    return (
+                      <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md hover:border-purple-200 transition-all flex flex-col group">
+                        {images.length > 0 && (
+                          <div className="aspect-video w-full overflow-hidden bg-slate-100 relative">
+                            <img src={images[0]} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            {images.length > 1 && (
+                              <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-2 py-1 rounded-lg flex items-center gap-1">
+                                <Image size={10} /> +{images.length - 1}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="p-4 flex-1 flex flex-col">
+                          <div className="flex justify-between items-start mb-2">
+                            <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">{item.created_at}</p>
+                            {item.video_url && <span className="p-1 bg-red-100 text-red-600 rounded-md" title="มีวีดีโอ"><Video size={10} /></span>}
+                          </div>
+                          <h3 className="font-black text-slate-800 mb-2 line-clamp-2 leading-tight">{item.title}</h3>
+                          <p className="text-xs text-slate-500 line-clamp-3 mb-4 leading-relaxed">{item.content}</p>
+                          <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
+                            <button onClick={() => setNewsDetailModal({ isOpen: true, item })} className="text-xs font-black text-purple-600 hover:text-purple-800 transition-colors flex items-center gap-1">
+                              อ่านเนื้อหาทั้งหมด <Plus size={12} />
+                            </button>
+                            {item.reference_url && (
+                              <a href={item.reference_url} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-purple-500 transition-colors">
+                                <ExternalLink size={14} />
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -579,7 +616,7 @@ export default function App() {
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-black text-slate-700">จัดการระบบ</h2>
                 <div className="flex gap-2">
-                  <button onClick={() => setNewsFormModal({ isOpen: true, item: null })} className="bg-purple-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md hover:bg-purple-700 transition-all flex items-center gap-1.5">
+                  <button onClick={() => openNewsForm()} className="bg-purple-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md hover:bg-purple-700 transition-all flex items-center gap-1.5">
                     <Megaphone size={14} /> เพิ่มข่าวประชาสัมพันธ์
                   </button>
                 </div>
@@ -649,7 +686,7 @@ export default function App() {
                             <p className="text-[9px] text-slate-400 mt-0.5">{item.created_at}</p>
                           </td>
                           <td className="px-5 py-3 text-right space-x-1">
-                            <button onClick={() => setNewsFormModal({ isOpen: true, item })} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="แก้ไข">
+                            <button onClick={() => openNewsForm(item)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="แก้ไข">
                               <Edit size={14} />
                             </button>
                             <button onClick={() => deleteNews(item.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all" title="ลบ">
@@ -721,13 +758,26 @@ export default function App() {
       {newsDetailModal.isOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden my-auto">
-            <div className="relative">
-              {newsDetailModal.item.image_url ? (
-                <img src={newsDetailModal.item.image_url} className="w-full aspect-video object-cover" alt="" />
-              ) : (
-                <div className="w-full h-32 bg-gradient-to-r from-purple-500 to-purple-400" />
-              )}
-              <button onClick={() => setNewsDetailModal({ isOpen: false, item: null })} className="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full backdrop-blur-sm transition-all"><X size={20} /></button>
+            <div className="relative group/modal">
+              {(() => {
+                let images = [];
+                try { images = JSON.parse(newsDetailModal.item.image_url); if (!Array.isArray(images)) images = [newsDetailModal.item.image_url]; }
+                catch(e) { images = newsDetailModal.item.image_url ? [newsDetailModal.item.image_url] : []; }
+
+                if (images.length === 0) return <div className="w-full h-32 bg-gradient-to-r from-purple-500 to-purple-400" />;
+                if (images.length === 1) return <img src={images[0]} className="w-full aspect-video object-cover" alt="" />;
+                
+                return (
+                  <div className="grid grid-cols-2 gap-0.5 bg-slate-100">
+                    {images.map((url, i) => (
+                      <div key={i} className={`${images.length === 3 && i === 0 ? 'col-span-2' : ''} aspect-video overflow-hidden`}>
+                        <img src={url} className="w-full h-full object-cover hover:scale-110 transition-transform duration-700" alt="" />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+              <button onClick={() => setNewsDetailModal({ isOpen: false, item: null })} className="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full backdrop-blur-sm transition-all z-10"><X size={20} /></button>
             </div>
             <div className="p-6 md:p-8">
               <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -791,7 +841,6 @@ export default function App() {
                 id: newsFormModal.item?.id,
                 title: fd.get('title'),
                 content: fd.get('content'),
-                image_url: fd.get('image_url'),
                 video_url: fd.get('video_url'),
                 reference_url: fd.get('reference_url')
               });
@@ -804,15 +853,37 @@ export default function App() {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">เนื้อหาข่าวสาร *</label>
                 <textarea name="content" required defaultValue={newsFormModal.item?.content} rows={4} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm leading-relaxed" placeholder="รายละเอียดเนื้อความข่าว..." />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Image size={10} /> URL รูปภาพหน้าปก</label>
-                  <input name="image_url" defaultValue={newsFormModal.item?.image_url} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 text-xs" placeholder="https://..." />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pl-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Image size={10} /> URL รูปภาพประกอบ (หลายรูปได้)</label>
+                  <button type="button" onClick={addImageField} className="text-[10px] font-black text-purple-600 hover:text-purple-800 flex items-center gap-1 bg-purple-50 px-2 py-1 rounded-lg transition-all">
+                    <Plus size={10} /> เพิ่มรูปภาพ
+                  </button>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Video size={10} /> URL วีดีโอ (YouTube)</label>
-                  <input name="video_url" defaultValue={newsFormModal.item?.video_url} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 text-xs" placeholder="https://..." />
+                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                  {newsFormModal.imageUrls.map((url, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input 
+                        value={url} 
+                        onChange={(e) => updateImageField(index, e.target.value)}
+                        className="flex-1 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 text-xs sm:text-sm" 
+                        placeholder={`URL รูปภาพที่ ${index + 1}...`} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => removeImageField(index)}
+                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Video size={10} /> URL วีดีโอประกอบ (YouTube)</label>
+                <input name="video_url" defaultValue={newsFormModal.item?.video_url} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm" placeholder="https://..." />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><ExternalLink size={10} /> URL อ้างอิงแหล่งที่มา</label>
